@@ -1,15 +1,17 @@
 """
-Signal diagnostic plot utilities.
+Generic signal diagnostic plot utilities — infrastructure layer.
 
-All functions write to a file and return the output path. No top-level
-script code — import and call. Matplotlib backend is set to Agg so these
-run headless in CI without a display.
+All functions are parameterized by metric name, unit, and axis labels.
+No domain knowledge is baked in (no gait, no temperature, no pressure).
 
-Typical usage:
-    from crucible.signal.plot import plot_si_bar, plot_step_count_bar, plot_signal_trace
+Projects generate domain-specific wrappers in src/plot.py via
+`/toolchain scaffold`, which uses domain primitive names and units
+from Amendment 1 (docs/device_context.md Signal Inventory) as labels.
 
-    plot_si_bar(results, output="docs/plots/si_comparison.png")
-    plot_signal_trace(samples, title="Flat walk 100 steps", output="docs/plots/trace.png")
+All functions:
+  - Write to a file and return the resolved output Path.
+  - Never display to screen (Agg backend — headless CI safe).
+  - Create output directory if it does not exist.
 """
 from __future__ import annotations
 
@@ -23,215 +25,65 @@ import numpy as np
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SI / step-count bar chart
+# Raw sensor time-series trace
 # ─────────────────────────────────────────────────────────────────────────────
 
-def plot_si_bar(
-    results: dict[str, dict],
-    labels: Sequence[str] | None = None,
-    output: str | Path = "si_comparison.png",
-    si_tolerance_pct: float = 3.0,
-    title: str = "Symmetry Index Comparison",
-    dpi: int = 150,
-) -> Path:
-    """Bar chart comparing SI% across profiles for two detectors.
-
-    Parameters
-    ----------
-    results : dict
-        Keyed by profile name. Each value must contain:
-            "std_si"    float | None  — standard-detector SI%
-            "new_si"    float | None  — new-detector SI%
-        Optional keys:
-            "std_count" int  — step count for standard detector
-            "new_count" int  — step count for new detector
-    labels : list[str] | None
-        Human-readable labels for each profile (same order as results keys).
-        Defaults to the keys of `results`.
-    output : str | Path
-        Destination file path.
-    si_tolerance_pct : float
-        Red dashed threshold line.
-    title : str
-        Figure suptitle.
-    dpi : int
-
-    Returns
-    -------
-    Path
-        Resolved output path.
-    """
-    profile_keys = list(results.keys())
-    if labels is None:
-        labels = profile_keys
-
-    COLORS_STD = "#90CAF9"
-    COLORS_NEW = "#1565C0"
-
-    std_si_vals = [
-        results[k]["std_si"] if results[k].get("std_si") is not None else 0.0
-        for k in profile_keys
-    ]
-    new_si_vals = [
-        results[k]["new_si"] if results[k].get("new_si") is not None else 0.0
-        for k in profile_keys
-    ]
-
-    x = np.arange(len(profile_keys))
-    w = 0.35
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    fig.suptitle(title, fontsize=12)
-
-    b1 = ax.bar(x - w / 2, std_si_vals, w, color=COLORS_STD,
-                label="Standard", edgecolor="white")
-    b2 = ax.bar(x + w / 2, new_si_vals, w, color=COLORS_NEW,
-                label="New", edgecolor="white")
-
-    ax.axhline(si_tolerance_pct, color="red", linewidth=1.2, linestyle="--",
-               label=f"±{si_tolerance_pct}% tolerance")
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=10)
-    ax.set_ylabel("SI (%)")
-    ax.set_title(f"Symmetry Index (target <{si_tolerance_pct}%)")
-    y_max = max(max(std_si_vals), max(new_si_vals), si_tolerance_pct + 0.5) * 1.2
-    ax.set_ylim(0, y_max)
-    ax.legend(fontsize=9)
-    ax.grid(True, axis="y", alpha=0.3)
-
-    for bar, val in zip(list(b1) + list(b2), std_si_vals + new_si_vals):
-        ax.text(bar.get_x() + bar.get_width() / 2, val + 0.05,
-                f"{val:.2f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
-
-    plt.tight_layout()
-    out = Path(output).resolve()
-    out.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(str(out), dpi=dpi)
-    plt.close(fig)
-    return out
-
-
-def plot_step_count_bar(
-    results: dict[str, dict],
-    labels: Sequence[str] | None = None,
-    target: int = 100,
-    tolerance: int = 5,
-    output: str | Path = "step_count.png",
-    title: str = "Step Count Comparison",
-    dpi: int = 150,
-) -> Path:
-    """Bar chart comparing detected step counts across profiles.
-
-    Parameters
-    ----------
-    results : dict
-        Keyed by profile name. Each value must contain:
-            "std_count" int  — standard-detector step count
-            "new_count" int  — new-detector step count
-    labels : list[str] | None
-    target : int
-        Expected step count for the dashed reference line.
-    tolerance : int
-        Pass/fail band around the target (±tolerance).
-    output : str | Path
-    title : str
-    dpi : int
-    """
-    profile_keys = list(results.keys())
-    if labels is None:
-        labels = profile_keys
-
-    COLORS_STD = "#90CAF9"
-    COLORS_NEW = "#1565C0"
-
-    std_counts = [results[k].get("std_count", 0) for k in profile_keys]
-    new_counts = [results[k].get("new_count", 0) for k in profile_keys]
-
-    x = np.arange(len(profile_keys))
-    w = 0.35
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    fig.suptitle(title, fontsize=12)
-
-    b1 = ax.bar(x - w / 2, std_counts, w, color=COLORS_STD,
-                label="Standard", edgecolor="white")
-    b2 = ax.bar(x + w / 2, new_counts, w, color=COLORS_NEW,
-                label="New", edgecolor="white")
-
-    ax.axhline(target, color="green", linewidth=1.2, linestyle="--",
-               label=f"Target ({target} ±{tolerance})")
-    ax.axhline(target - tolerance, color="green", linewidth=0.6, linestyle=":", alpha=0.5)
-    ax.axhline(target + tolerance, color="green", linewidth=0.6, linestyle=":", alpha=0.5)
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=10)
-    ax.set_ylabel("Steps detected")
-    ax.set_title(f"Step Count (target {target} ±{tolerance})")
-    ax.set_ylim(0, max(max(std_counts), max(new_counts), target + tolerance) * 1.15)
-    ax.legend(fontsize=9)
-    ax.grid(True, axis="y", alpha=0.3)
-
-    for bar, val in zip(list(b1) + list(b2), std_counts + new_counts):
-        ax.text(bar.get_x() + bar.get_width() / 2, val + 0.5,
-                str(val), ha="center", va="bottom", fontsize=9, fontweight="bold")
-
-    plt.tight_layout()
-    out = Path(output).resolve()
-    out.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(str(out), dpi=dpi)
-    plt.close(fig)
-    return out
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# IMU signal trace
-# ─────────────────────────────────────────────────────────────────────────────
-
-def plot_signal_trace(
+def plot_sensor_trace(
     samples: "np.ndarray",
-    odr_hz: float = 208.0,
-    title: str = "IMU Signal Trace",
-    output: str | Path = "signal_trace.png",
-    channels: Sequence[str] = ("ax", "ay", "az", "gx", "gy", "gz"),
+    odr_hz: float = 100.0,
+    title: str = "Sensor Trace",
+    output: str | Path = "sensor_trace.png",
+    channels: Sequence[str] | None = None,
+    channel_groups: Sequence[tuple[str, str]] | None = None,
     dpi: int = 150,
 ) -> Path:
-    """Plot raw IMU samples as time-series traces.
+    """Plot raw sensor samples as time-series traces.
 
     Parameters
     ----------
-    samples : np.ndarray (N, 6)
-        Columns: [ax ay az gx gy gz] in physical units (m/s² and dps).
+    samples : np.ndarray (N,) or (N, C)
+        Sensor data. Single-channel or multi-channel.
     odr_hz : float
         Sample rate used to build the time axis.
     title : str
     output : str | Path
-    channels : sequence of 6 str
-        Column labels.
+    channels : sequence[str] | None
+        Column labels. Defaults to ``ch0``, ``ch1``, ...
+    channel_groups : sequence[(label, unit)] | None
+        One entry per subplot. Columns are split evenly across groups.
+        If None, all channels appear in a single subplot.
     dpi : int
     """
-    import numpy as np
-    n = len(samples)
+    if samples.ndim == 1:
+        samples = samples[:, np.newaxis]
+    n, c = samples.shape
     t = np.arange(n) / odr_hz
+    ch_labels = list(channels) if channels else [f"ch{i}" for i in range(c)]
 
-    fig, axes = plt.subplots(2, 1, figsize=(14, 6), sharex=True)
-    fig.suptitle(title, fontsize=11)
-
-    # Accelerometer
-    ax0 = axes[0]
-    for i, label in enumerate(channels[:3]):
-        ax0.plot(t, samples[:, i], linewidth=0.8, label=label)
-    ax0.set_ylabel("Acceleration (m/s²)")
-    ax0.legend(fontsize=8, loc="upper right")
-    ax0.grid(True, alpha=0.3)
-
-    # Gyroscope
-    ax1 = axes[1]
-    for i, label in enumerate(channels[3:6]):
-        ax1.plot(t, samples[:, i + 3], linewidth=0.8, label=label)
-    ax1.set_ylabel("Angular rate (dps)")
-    ax1.set_xlabel("Time (s)")
-    ax1.legend(fontsize=8, loc="upper right")
-    ax1.grid(True, alpha=0.3)
+    if channel_groups:
+        n_groups = len(channel_groups)
+        cols_per = c // n_groups
+        fig, axes = plt.subplots(n_groups, 1, figsize=(14, 4 * n_groups), sharex=True)
+        if n_groups == 1:
+            axes = [axes]
+        fig.suptitle(title, fontsize=11)
+        for g, (ax, (grp_label, grp_unit)) in enumerate(zip(axes, channel_groups)):
+            start = g * cols_per
+            end = (start + cols_per) if g < n_groups - 1 else c
+            for i in range(start, end):
+                ax.plot(t, samples[:, i], linewidth=0.8, label=ch_labels[i])
+            ax.set_ylabel(f"{grp_label} ({grp_unit})")
+            ax.legend(fontsize=8, loc="upper right")
+            ax.grid(True, alpha=0.3)
+        axes[-1].set_xlabel("Time (s)")
+    else:
+        fig, ax = plt.subplots(figsize=(14, 4))
+        fig.suptitle(title, fontsize=11)
+        for i in range(c):
+            ax.plot(t, samples[:, i], linewidth=0.8, label=ch_labels[i])
+        ax.set_xlabel("Time (s)")
+        ax.legend(fontsize=8, loc="upper right")
+        ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
     out = Path(output).resolve()
@@ -242,48 +94,179 @@ def plot_signal_trace(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Snapshot SI timeline
+# Per-profile metric bar chart
 # ─────────────────────────────────────────────────────────────────────────────
 
-def plot_snapshot_timeline(
-    snapshots: list,
-    si_tolerance_pct: float = 3.0,
-    output: str | Path = "snapshot_timeline.png",
-    title: str = "Snapshot Timeline",
+def plot_metric_bar(
+    results: dict[str, dict],
+    metric_key: str,
+    metric_label: str,
+    metric_unit: str,
+    threshold: float | None = None,
+    threshold_label: str | None = None,
+    labels: Sequence[str] | None = None,
+    compare_key: str | None = None,
+    compare_label: str = "Comparison",
+    output: str | Path = "metric_bar.png",
+    title: str | None = None,
     dpi: int = 150,
 ) -> Path:
-    """Plot SI% and cadence over session snapshots.
+    """Bar chart comparing a metric across simulation/field profiles.
 
     Parameters
     ----------
-    snapshots : list[SnapshotEvent]
-    si_tolerance_pct : float
-        Reference line for SI pass/fail.
+    results : dict[profile_name, dict]
+        Each value must contain ``metric_key``. May also contain ``compare_key``.
+    metric_key : str
+        Primary metric field (e.g. ``"mean_error"``).
+    metric_label : str
+        Y-axis label (e.g. ``"Symmetry Index"``).
+    metric_unit : str
+        Unit string (e.g. ``"%"``, ``"°C"``).
+    threshold : float | None
+        Reference line (e.g. pass/fail boundary).
+    threshold_label : str | None
+        Legend label for the reference line.
+    labels : sequence[str] | None
+        Profile display names (defaults to ``results`` keys).
+    compare_key : str | None
+        If given, draw a second bar series using this key.
+    compare_label : str
+        Legend label for the second series.
+    output : str | Path
+    title : str | None
+    dpi : int
+    """
+    profile_keys = list(results.keys())
+    display_labels = list(labels) if labels else profile_keys
+    primary_vals = [float(results[k].get(metric_key) or 0.0) for k in profile_keys]
+
+    COLOR_A = "#90CAF9"
+    COLOR_B = "#1565C0"
+    x = np.arange(len(profile_keys))
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    if title:
+        fig.suptitle(title, fontsize=12)
+    elif threshold is not None:
+        fig.suptitle(
+            f"{metric_label} (target < {threshold} {metric_unit})", fontsize=12
+        )
+
+    if compare_key:
+        compare_vals = [float(results[k].get(compare_key) or 0.0) for k in profile_keys]
+        w = 0.35
+        b1 = ax.bar(x - w / 2, primary_vals, w, color=COLOR_A,
+                    label=metric_label, edgecolor="white")
+        b2 = ax.bar(x + w / 2, compare_vals, w, color=COLOR_B,
+                    label=compare_label, edgecolor="white")
+        for bar, val in zip(list(b1) + list(b2), primary_vals + compare_vals):
+            ax.text(bar.get_x() + bar.get_width() / 2, val * 1.02,
+                    f"{val:.2f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+    else:
+        b1 = ax.bar(x, primary_vals, 0.6, color=COLOR_B, edgecolor="white")
+        for bar, val in zip(b1, primary_vals):
+            ax.text(bar.get_x() + bar.get_width() / 2, val * 1.02,
+                    f"{val:.2f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+    if threshold is not None:
+        lbl = threshold_label or f"threshold ({threshold} {metric_unit})"
+        ax.axhline(threshold, color="red", linewidth=1.2, linestyle="--", label=lbl)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(display_labels, fontsize=10)
+    ax.set_ylabel(f"{metric_label} ({metric_unit})")
+    ax.legend(fontsize=9)
+    ax.grid(True, axis="y", alpha=0.3)
+
+    plt.tight_layout()
+    out = Path(output).resolve()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(str(out), dpi=dpi)
+    plt.close(fig)
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Event sequence metric timeline
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_metric_timeline(
+    events: list,
+    index_field: str,
+    primary_field: str,
+    primary_label: str,
+    primary_unit: str,
+    secondary_field: str | None = None,
+    secondary_label: str | None = None,
+    secondary_unit: str | None = None,
+    threshold: float | None = None,
+    output: str | Path = "metric_timeline.png",
+    title: str = "Metric Timeline",
+    dpi: int = 150,
+) -> Path:
+    """Plot one or two metrics from a sequence of parsed UART events.
+
+    Works with both ``UartEvent`` objects (accessing ``.fields``) and plain
+    dataclass instances (accessing attributes directly).
+
+    Parameters
+    ----------
+    events : list
+        Sequence of event objects. Each must expose ``index_field`` and
+        ``primary_field`` as either a ``.fields`` dict key or an attribute.
+    index_field : str
+        X-axis field (e.g. ``"anchor_step"``, ``"sample_index"``).
+    primary_field : str
+        First metric field.
+    primary_label : str
+        Y-axis label for the primary subplot.
+    primary_unit : str
+    secondary_field : str | None
+        If given, a second subplot is drawn.
+    secondary_label : str | None
+    secondary_unit : str | None
+    threshold : float | None
+        Reference line on the primary axis.
     output : str | Path
     title : str
     dpi : int
     """
-    if not snapshots:
-        raise ValueError("No snapshots to plot.")
 
-    indices  = [s.anchor_step for s in snapshots]
-    si_vals  = [s.si_stance_pct for s in snapshots]
-    cad_vals = [s.mean_cadence_spm for s in snapshots]
+    def _get(ev: object, key: str) -> float:
+        if isinstance(ev, dict):
+            return float(ev.get(key, 0))
+        if hasattr(ev, "fields"):
+            return float(getattr(ev, "fields", {}).get(key, 0))
+        return float(getattr(ev, key, 0))
 
-    fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
+    indices = [_get(ev, index_field) for ev in events]
+    primary_vals = [_get(ev, primary_field) for ev in events]
+
+    n_axes = 2 if secondary_field else 1
+    fig, axes = plt.subplots(n_axes, 1, figsize=(12, 4 * n_axes), sharex=True)
+    if n_axes == 1:
+        axes = [axes]
     fig.suptitle(title, fontsize=11)
 
-    axes[0].plot(indices, si_vals, marker="o", linewidth=1.2, color="#1565C0")
-    axes[0].axhline(si_tolerance_pct, color="red", linestyle="--",
-                    linewidth=1.0, label=f"±{si_tolerance_pct}% tolerance")
-    axes[0].set_ylabel("SI stance (%)")
-    axes[0].legend(fontsize=8)
+    axes[0].plot(indices, primary_vals, marker="o", linewidth=1.2, color="#1565C0")
+    if threshold is not None:
+        axes[0].axhline(
+            threshold, color="red", linestyle="--", linewidth=1.0,
+            label=f"threshold ({threshold} {primary_unit})",
+        )
+        axes[0].legend(fontsize=8)
+    axes[0].set_ylabel(f"{primary_label} ({primary_unit})")
     axes[0].grid(True, alpha=0.3)
 
-    axes[1].plot(indices, cad_vals, marker="s", linewidth=1.2, color="#43A047")
-    axes[1].set_ylabel("Cadence (spm)")
-    axes[1].set_xlabel("Anchor step index")
-    axes[1].grid(True, alpha=0.3)
+    if secondary_field and secondary_label and secondary_unit:
+        secondary_vals = [_get(ev, secondary_field) for ev in events]
+        axes[1].plot(indices, secondary_vals, marker="s", linewidth=1.2, color="#43A047")
+        axes[1].set_ylabel(f"{secondary_label} ({secondary_unit})")
+        axes[1].set_xlabel(index_field)
+        axes[1].grid(True, alpha=0.3)
+    else:
+        axes[0].set_xlabel(index_field)
 
     plt.tight_layout()
     out = Path(output).resolve()

@@ -1,8 +1,11 @@
 """
-crucible.signal — UART event parsing, binary snapshot parsing, plot utilities.
+crucible.signal — generic UART event infrastructure and plot utilities.
 
 Quick imports:
-    from crucible.signal.events   import StepEvent, SnapshotEvent, SessionEndEvent
-    from crucible.signal.analysis import parse_uart_log, parse_binary_export_log
-    from crucible.signal.plot     import plot_si_bar, plot_step_count_bar, plot_signal_trace
+    from crucible.signal.events   import UartEvent, SessionEndEvent
+    from crucible.signal.analysis import UartParser, EventDefinition
+    from crucible.signal.plot     import plot_sensor_trace, plot_metric_bar, plot_metric_timeline
+
+Domain-specific event types, parsers, and plot wrappers are generated
+per-project in src/ by `/toolchain scaffold`.
 """

@@ -3,33 +3,53 @@
 # Python 2 (IronPython) compatible: no f-strings, no non-ASCII.
 #
 # Registered at sysbus 0x400B0000 (size 0x100).
-# Used only when firmware is built with CONFIG_GAIT_RENODE_SIM=y.
+# Used only when firmware is built with CONFIG_CRUCIBLE_RENODE_SIM=y
+# (previously CONFIG_GAIT_RENODE_SIM=y -- rename in your firmware Kconfig).
 #
 # Register map (byte-addressed):
 #   0x00-0x03  STATUS  uint32 LE  (1 = sample ready, 0 = exhausted)
-#   0x04-0x1B  sample data: [ax ay az gx gy gz] float32 LE (24 bytes)
+#   0x04-0x1B  sample data: columns as float32 LE, 24 bytes (6 floats)
+#              Default layout: [ax ay az gx gy gz] for IMU sensors.
 #   0x1C       ACK     (write any value) -- advances to next sample
 #
-# File format (/tmp/gait_imu_sim.f32):
-#   N x 24 bytes, each = [ax ay az gx gy gz] float32 LE
-#   Written by simulator/renode_bridge.py before Renode starts.
+# File format: N x 24 bytes, each = 6 x float32 LE
+# Written by crucible.sim.renode.RenoneBridge before Renode starts.
+#
+# File path is communicated via a config file:
+#   ~/.crucible_imu_sim_path.txt  -- absolute path to the .f32 sample file
+# Fallback if missing: /tmp/crucible_imu_sim.f32
 #
 # State persistence strategy: file-based _idx avoids IronPython in-memory
 # list truncation (large _samples list silently capped at ~5 entries in
 # Renode 1.16 embedded IronPython context).
-# _idx is stored in /tmp/stub_idx.txt on every ACK write.
+# _idx is stored in ~/.crucible_stub_idx.txt on every ACK write.
 # _cur_bytes (24 bytes) is kept as a module global -- small enough to be safe.
 
 import struct
 import os
 
-_SIM_F32_PATH = "/tmp/gait_imu_sim.f32"
-_IDX_PATH     = os.path.expanduser("~/.gait_stub_idx.txt")
+_CFG_IMU_PATH = os.path.expanduser("~/.crucible_imu_sim_path.txt")
+_IDX_PATH     = os.path.expanduser("~/.crucible_stub_idx.txt")
+_FALLBACK_F32 = "/tmp/crucible_imu_sim.f32"
+
+
+def _read_cfg(path, fallback):
+    try:
+        f = open(path, "r")
+        val = f.read().strip()
+        f.close()
+        return val if val else fallback
+    except Exception:
+        return fallback
+
+
+def _sim_f32_path():
+    return _read_cfg(_CFG_IMU_PATH, _FALLBACK_F32)
 
 
 def _n_samples():
     try:
-        return os.path.getsize(_SIM_F32_PATH) // 24
+        return os.path.getsize(_sim_f32_path()) // 24
     except Exception:
         return 0
 
@@ -50,7 +70,7 @@ def _write_idx(idx):
 def _load_sample(idx):
     # Read exactly one 24-byte sample from the f32 file at the given index.
     try:
-        f = open(_SIM_F32_PATH, "rb")
+        f = open(_sim_f32_path(), "rb")
         f.seek(idx * 24)
         raw = f.read(24)
         f.close()
@@ -70,7 +90,7 @@ if request.IsInit:
     _write_idx(0)
     _cur_bytes = _load_sample(0)
     n = _n_samples()
-    self.NoisyLog("sim_imu_stub: file-based idx, %d samples, path=%s" % (n, _SIM_F32_PATH))
+    self.NoisyLog("sim_imu_stub: file-based idx, %d samples, path=%s" % (n, _sim_f32_path()))
 
 elif request.IsRead:
     off = request.Offset

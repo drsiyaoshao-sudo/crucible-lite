@@ -1,0 +1,42 @@
+# Crucible — Python dependencies
+#
+# Install: pip install -r requirements.txt
+#
+# External tools (not pip-installable — see below):
+#   Renode      https://renode.io           simulation engine (Renode path only)
+#   PlatformIO  pip install platformio      firmware build + flash
+#   minicom     brew install minicom        serial monitor (or any equivalent)
+#   ninja       brew install ninja          Zephyr link step (Renode path only)
+#
+# -----------------------------------------------------------------------------
+# Simulation pipeline
+# -----------------------------------------------------------------------------
+
+numpy>=1.24.0              # signal generation, sample arrays, sensor data
+
+# -----------------------------------------------------------------------------
+# Signal plots
+# -----------------------------------------------------------------------------
+
+matplotlib>=3.7.0          # all plot primitives (Agg backend — headless safe)
+
+# -----------------------------------------------------------------------------
+# BLE transport (optional — only needed for Stage 0 wireless smoke test + Stage 4)
+# -----------------------------------------------------------------------------
+
+bleak>=0.21.0              # BLE UART console (NUS) and GATT client
+
+# -----------------------------------------------------------------------------
+# PlatformIO — firmware build and flash
+# Install separately or via pip:
+#   pip install platformio
+# Not listed here as a pinned dep because it manages its own toolchain env.
+# -----------------------------------------------------------------------------
+
+# platformio>=6.1.0        # uncomment if you want pip to manage it
+
+# -----------------------------------------------------------------------------
+# Testing (optional — for running crucible infrastructure unit tests)
+# -----------------------------------------------------------------------------
+
+pytest>=7.4.0

@@ -43,9 +43,25 @@ The HIL-first principle in detail. Read this before you do anything with hardwar
 
 ## First session checklist
 
-Before running `/session 0`, you need three things:
+Before running `/session 0`, you need four things:
 
-### A. Your domain primitives (Article I compliance)
+### A. Python environment
+
+```bash
+pip install -r requirements.txt
+```
+
+This installs numpy, matplotlib, and bleak. Verify external tools are on your PATH:
+
+```bash
+which renode      # Renode simulation engine — https://renode.io
+which pio         # PlatformIO — pip install platformio
+which ninja       # Zephyr link step — brew install ninja
+```
+
+Missing tools produce warnings at session start, not errors — they are only needed for the paths that use them (Renode for Stage 1 firmware path, `pio`/`ninja` for Stage 0 firmware build).
+
+### B. Your domain primitives (Article I compliance)
 
 Write down — on paper is fine — the two or three physical quantities your device ultimately measures or responds to. These are not sensor readings. These are the things the person or system using your device actually cares about.
 
@@ -56,7 +72,7 @@ Examples:
 
 If you cannot name these, stop. Read Article I again. Do not proceed past this step until you can name your primitives. Every threshold you set without naming a primitive is a guess.
 
-### B. Your dev kit and toolchain
+### C. Your dev kit and toolchain
 
 Know the answers to:
 - What board are you using? (exact model, part number)
@@ -66,7 +82,7 @@ Know the answers to:
 
 Run `/toolchain init` to record these formally. The toolchain janitor will walk you through each field interactively.
 
-### C. A git repository
+### D. A git repository
 
 This framework uses git as the record of decisions. Every Bill enacted, every Amendment ratified, every case law ruling recorded — all of it is a commit. Without git history, you have no audit trail.
 
@@ -78,6 +94,10 @@ This framework uses git as the record of decisions. Every Bill enacted, every Am
 
 ```
 START NEW PROJECT
+│
+├─► pip install -r requirements.txt
+│     Installs: numpy, matplotlib, bleak, pytest
+│     Check: which renode  /  which pio  /  which ninja
 │
 ├─► /spec collect ──────────────────────────────────────────────────────────────────────┐
 │     │  Interview: device purpose, project target, pass/fail threshold,                │
@@ -93,12 +113,14 @@ START NEW PROJECT
 │                                                                                       │
 ├─► /toolchain init ─────────────────────────────────────────────────────────────────┐  │
 │     Register: board, FQBN, pins, libraries, repos                                  │  │
+│     Fill in: ## Firmware UART Format (event markers, field names, session_end)     │  │
 │     Writes: docs/toolchain_config.md (status: UNLOCKED)                            │  │
 │                                                                                     │  │
-├─► Ratify Amendments 2–4 ───────────────────────────────────────────────────────────┘  │
+├─► Ratify Amendments 2–4 + Amendment 11 ────────────────────────────────────────────┘  │
 │     Amendment 2: Stage Gate Order                                                      │
 │     Amendment 3: Toolchain Alignment                                                   │
 │     Amendment 4: Three-Strike Rule                                                     │
+│     Amendment 11: Scaffold Immutability                                                │
 │     (remove PROPOSED prefix in amendments.md for each)                                 │
 │                                                                                        │
 └─► Ready for /session 0 ◄───────────────────────────────────────────────────────────┘
@@ -256,7 +278,9 @@ Commands (human-invoked)          Agents (AI-executed)
 
 /regression ──────────────────►  regression-runner
                                   └─► simulator-operator (per profile)
-                                        ├─► uart-reader
+                                        ├─► [Path A] src/signals.py + src/algorithm.py
+                                        ├─► [Path B] RenoneBridge → uart-reader
+                                        ├─► compare_paths() if both available
                                         └─► plotter
 
 /plot-evidence ───────────────►  plotter
@@ -281,13 +305,48 @@ Commands (human-invoked)          Agents (AI-executed)
 
 | Stage | What happens | Entry condition |
 |-------|-------------|-----------------|
-| **0 — HIL Toolchain Lock** | Flash counter → IMU → algo USB → algo BLE. Prove the flash-run-observe loop works. | None — always first |
-| **1 — Simulation** | Validate algorithm on physics model. Also accepts field measurement data as input. | Stage 0 closed |
-| **2 — Firmware Integration** | Port validated algorithm to dev kit. USB serial validation. | Stage 1 closed |
-| **3 — Field Test** | Real device, real conditions. Data captured and fed back to Stage 1 simulation. | Stage 2 closed |
+| **0 — HIL Toolchain Lock** | Flash counter → IMU → algo USB → algo BLE. Prove the flash-run-observe loop works. Run `/toolchain scaffold` at end of Stage 0. | None — always first |
+| **1 — Simulation** | Two paths: **A** (signal-only — pure Python, fast) and **B** (Renode — firmware in emulator). Both must pass before gate. | Stage 0 closed + scaffold done |
+| **2 — Firmware Integration** | Port validated algorithm to dev kit. USB serial validation against Stage 1 Python model predictions. | Stage 1 closed |
+| **3 — Field Test** | Real device, real conditions. Field data replayed through `src/analysis.py` — same parser as simulation. | Stage 2 closed |
 | **4 — Host Integration** | Connect device to smart home hub, gateway, cloud, or other consumer system. | Stage 3 closed |
 
 **Stage 0 failure is not a setback — it is the framework working.** A toolchain failure caught at Stage 0 takes 20 minutes to fix. The same failure caught at Stage 3 takes a week.
+
+### Stage 1 in detail — two simulation paths
+
+```
+Path A — Signal-only (no firmware, seconds to run):
+  src/signals.py::generate(profile, n_steps)   ← you write the physics model
+         │
+         ▼
+  src/algorithm.py::run(samples)               ← you write the Python algorithm
+         │
+         ▼
+  metrics dict  →  compare against pass/fail threshold
+
+Path B — Renode (firmware in emulator, minutes to run):
+  src/signals.py::generate(profile, n_steps)   ← same physics model
+         │
+         ▼
+  RenoneBridge(elf_path).run(samples)          ← firmware runs in Renode
+         │
+         ▼
+  src/analysis.py::PARSER.parse_log(text)      ← generated parser reads UART
+         │
+         ▼
+  metrics dict  →  compare against pass/fail threshold
+
+Path A+B — parity check:
+  run both → compare_paths() → if they diverge, Python model OR firmware is wrong
+  Justice decides which. Do not fix firmware until divergence is explained.
+```
+
+**What you must write before Stage 1:**
+- `src/signals.py::generate()` — physics model that synthesizes sensor data per profile
+- `src/algorithm.py::run()` — Python implementation of your algorithm (mirrors firmware logic)
+
+These are stubbed by `/toolchain scaffold`. The rest of `src/` is generated automatically.
 
 ---
 
@@ -298,9 +357,13 @@ Agents are Claude subagents launched by slash commands. They do not make decisio
 | Command | When to use |
 |---------|-------------|
 | `/session [stage]` | Orchestrate a full stage or check session status |
-| `/toolchain <subcommand>` | Register hardware, libraries, repos; run validation |
+| `/toolchain init` | Register hardware, FQBN, pins, libraries, UART format |
+| `/toolchain scaffold` | Generate `src/` modules after filling in UART format |
+| `/toolchain lock` | Stamp toolchain config as Stage 0 validated |
 | `/hear "<name>" A vs B` | Declare a judicial hearing when two rules conflict |
+| `/regression [--signal-only\|--renode]` | Run full profile matrix; both paths if neither flag given |
 | `/hw-advisor` | Get design suggestions grounded in your test results |
+| `/sw-advisor` | Get algorithm suggestions grounded in simulation profiles |
 | `/plot-profile <profile>` | Generate a signal diagnostic plot |
 | `/plot-evidence <type>` | Collect evidence during a hearing or validation run |
 
@@ -313,13 +376,15 @@ Agents read `docs/toolchain_config.md` before taking any toolchain-dependent act
 The most important thing Crucible does that conventional CI/CD does not:
 
 ```
-  Field test data ──► Simulation ──► Algorithm refinement ──► Firmware
-                                                                  │
-                                                                  ▼
-                                              Field test ◄── HIL validation
+  Field test data ──► src/analysis.py ──► Simulation ──► Algorithm refinement ──► Firmware
+                       (same parser as                                                  │
+                        Renode path)                                                    ▼
+                                                             Field test ◄── HIL validation
 ```
 
-When your field test produces a result that deviates from your simulation prediction, you do not immediately fix the firmware. You replay the field data through the simulation first. If the simulation also deviates, the physics model is wrong — update it. If the simulation matches the field data but the firmware does not, the porting is wrong — fix the port. This distinction is not possible without the simulation layer, which is why Crucible keeps it alive through all five stages.
+When your field test produces a result that deviates from your simulation prediction, you do not immediately fix the firmware. You replay the field data through `src/analysis.py` — the same parser the simulation uses — and feed it into `src/algorithm.py`. If the Python model also deviates, the physics model is wrong — update it. If the Python model matches the field data but the firmware does not, the porting is wrong — fix the port. If neither matches, the signal model is wrong — update `src/signals.py`.
+
+This three-way diagnostic (field data vs Python model vs firmware) is only possible because the simulation, field data, and firmware all share the same `src/analysis.py` parser. That is why `/toolchain scaffold` generates it once and Amendment 11 freezes it — changing the parser mid-project destroys the traceability chain.
 
 ---
 
@@ -336,6 +401,12 @@ The 30 dps push-off threshold in GaitSense is not a round number chosen because 
 
 **4. Skipping the pathological test.**  
 BUG-013 in GaitSense: the SI computation was silently zeroed by an FPU emulator bug. Every healthy walker test passed. Only the pathological walker test (where the correct answer is non-zero) caught it. For any clinical or safety-adjacent device: always test under conditions where the correct answer is non-zero.
+
+**5. Letting the Python model and firmware diverge silently.**  
+The signal-only path (Path A) and the Renode path (Path B) must agree within tolerance before Stage 1 closes. If you skip the parity check, you will hit Stage 2 or Stage 3 with firmware that disagrees with your simulation — and you will not know which is correct. The compare_paths() report at Stage 1 gate is the only moment where you can resolve this before the hardware is in your hands.
+
+**6. Implementing `src/signals.py` as noise + a plausible mean.**  
+The signal generator is your physics model. A synthetic signal that looks right but has the wrong frequency content, wrong noise floor, or wrong transient shape will pass simulation but fail in the field. Derive every parameter in `generate()` from a domain primitive with a source citation — the same discipline Article I requires in firmware.
 
 ---
 

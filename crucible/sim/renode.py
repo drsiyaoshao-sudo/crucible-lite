@@ -4,22 +4,22 @@ Renode simulation bridge — domain-agnostic orchestrator.
 Drives the full embedded simulation path:
 
     samples (float32 np.ndarray, N×6)
-        │  write /tmp/gait_imu_sim.f32   (read by sim_imu_stub.py in Renode)
+        │  write imu_sim file  (read by sim_imu_stub.py in Renode)
         ▼
     Renode process  (firmware.elf on nRF52840 + IMU + UART stubs)
         │  firmware emits UART output
         ▼
-    UART log file   (read back and parsed by the caller's analysis module)
+    UART log file   (returned as raw text; project's src/analysis.py parses it)
 
 The stubs (sim_imu_stub.py, sim_uart_stub.py) are IronPython scripts that
-Renode loads as Python peripherals.  They live at:
+Renode loads as Python peripherals. They live at:
     crucible/sim/stubs/sim_imu_stub.py
     crucible/sim/stubs/sim_uart_stub.py
 
 Public API
 ----------
     RenoneBridge(elf_path, ...)
-    bridge.run(samples) -> (steps, snapshots, session_ends)
+    text = bridge.run(samples)         — returns raw UART log as a string
 
     detect_renode() -> str | None
     detect_firmware(*candidates) -> str | None
@@ -38,20 +38,25 @@ from typing import Optional
 
 import numpy as np
 
-from crucible.signal.analysis import parse_uart_log
-from crucible.signal.events import StepEvent, SnapshotEvent, SessionEndEvent
-
 # ─────────────────────────────────────────────────────────────────────────────
-# Stub paths (relative to this file)
+# Default paths — all prefixed ``crucible_`` (not domain-specific)
+# Projects can override via RenoneBridge constructor parameters.
 # ─────────────────────────────────────────────────────────────────────────────
 
 _STUBS_DIR      = Path(__file__).resolve().parent / "stubs"
 _IMU_STUB_PATH  = _STUBS_DIR / "sim_imu_stub.py"
 _UART_STUB_PATH = _STUBS_DIR / "sim_uart_stub.py"
 
-# Shared temp paths used between bridge and stubs
-_IMU_SIM_PATH  = Path("/tmp/gait_imu_sim.f32")   # float32 samples
-_UART_LOG_PATH = Path.home() / "gait_uart.log"
+# Shared temp paths used between the bridge and the IronPython stubs.
+# Override by passing imu_sim= and uart_log= to RenoneBridge().
+_IMU_SIM_PATH  = Path("/tmp/crucible_imu_sim.f32")
+_UART_LOG_PATH = Path.home() / "crucible_uart.log"
+
+# Config files used to pass paths to IronPython stubs (which cannot receive
+# dynamic arguments — config files bridge the gap).
+_CFG_IMU_PATH  = Path.home() / ".crucible_imu_sim_path.txt"
+_CFG_LOG_PATH  = Path.home() / ".crucible_uart_log_path.txt"
+_CFG_SENT_PATH = Path.home() / ".crucible_uart_sentinel_path.txt"
 
 # Renode telnet monitor
 _TELNET_HOST = "127.0.0.1"
@@ -75,7 +80,7 @@ def detect_renode() -> Optional[str]:
 def detect_firmware(*candidates: str | Path) -> Optional[str]:
     """Return the first existing ELF path from ``candidates``, else None.
 
-    Pass paths in priority order. Typical call:
+    Pass paths in priority order. Typical call::
 
         elf = detect_firmware(
             "firmware/zephyr_sim.elf",
@@ -160,7 +165,7 @@ class _MonitorClient:
         self._sock.sendall((cmd.strip() + "\n").encode())
         return self._recv_until(b") \x1b[0m", timeout=timeout)
 
-    def close(self):
+    def close(self) -> None:
         try:
             self._sock.close()
         except Exception:
@@ -180,13 +185,19 @@ class RenoneBridge:
         Firmware ELF to flash (must exist).
     imu_sim : Path
         Where to write the float32 IMU sample file (read by sim_imu_stub.py).
+        Defaults to ``/tmp/crucible_imu_sim.f32``.
     uart_log : Path
-        Where Renode writes UART output (polled for SESSION_END sentinel).
+        Where Renode writes UART output (polled for session-end sentinel).
+        Defaults to ``~/crucible_uart.log``.
     telnet_port : int
         Renode monitor telnet port.
     stationary_prefix_samples : int
         Quiet calibration samples prepended before the signal sequence.
         Must be ≥ the firmware's CAL_SAMPLES constant (typically 400).
+    session_end_sentinel : str
+        The UART string whose presence signals session completion.
+        Must match ``docs/toolchain_config.md`` [firmware.uart_format] session_end_marker.
+        Default: ``"SESSION_END"``.
     """
 
     def __init__(
@@ -196,38 +207,39 @@ class RenoneBridge:
         uart_log:  Path = _UART_LOG_PATH,
         telnet_port: int = _TELNET_PORT,
         stationary_prefix_samples: int = 450,
-    ):
+        session_end_sentinel: str = "SESSION_END",
+    ) -> None:
         self.elf_path    = Path(elf_path)
         self.imu_sim     = imu_sim
         self.uart_log    = uart_log
         self.telnet_port = telnet_port
         self.stationary_prefix_n = stationary_prefix_samples
+        self.session_end_sentinel = session_end_sentinel
 
-        self._proc:                 Optional[subprocess.Popen] = None
-        self._monitor:              Optional[_MonitorClient]   = None
-        self._n_samples:            int = 0
-        self._tmp_repl:             Optional[str] = None
-        self._tmp_repl2:            Optional[str] = None
-        self._renode_log_path:      Optional[Path] = None
-        self._session_end_sentinel: Optional[Path] = None
-        self._sim_failed:           bool = False
+        self._proc:            Optional[subprocess.Popen] = None
+        self._monitor:         Optional[_MonitorClient]   = None
+        self._n_samples:       int = 0
+        self._tmp_repl:        Optional[str] = None
+        self._tmp_repl2:       Optional[str] = None
+        self._renode_log_path: Optional[Path] = None
+        self._sentinel_path:   Optional[Path] = None
+        self._sim_failed:      bool = False
 
     # ── public API ────────────────────────────────────────────────────────────
 
-    def run(
-        self,
-        samples: np.ndarray,
-    ) -> tuple[list[StepEvent], list[SnapshotEvent], list[SessionEndEvent]]:
-        """Run a full simulation for the given IMU samples.
+    def run(self, samples: np.ndarray) -> str:
+        """Run a full simulation for the given sensor samples.
 
         Parameters
         ----------
-        samples : np.ndarray (N, 6)
-            Physical-unit float32 [ax ay az gx gy gz].
+        samples : np.ndarray (N, C)
+            Physical-unit float32 sensor data (columns depend on sensor type).
+            For IMU: [ax ay az gx gy gz].
 
         Returns
         -------
-        (steps, snapshots, session_ends)
+        str
+            Raw UART log text. Pass to your project's ``src/analysis.py`` parser.
         """
         self._sim_failed = False
         try:
@@ -241,15 +253,18 @@ class RenoneBridge:
         finally:
             self._stop_renode()
 
-        return self._parse_uart_log()
+        return self.uart_log.read_text(encoding="utf-8", errors="replace")
 
     # ── internal helpers ──────────────────────────────────────────────────────
 
-    def _prepare_imu_file(self, samples: np.ndarray):
+    def _prepare_imu_file(self, samples: np.ndarray) -> None:
         G = 9.81
         n_pre = self.stationary_prefix_n
-        stationary = np.zeros((n_pre, 6), dtype=np.float32)
-        stationary[:, 2] = G
+        stationary = np.zeros((n_pre, samples.shape[1]), dtype=np.float32)
+        # Assume column 2 (az) is the gravity axis for IMU sensors.
+        # For non-IMU sensors, pass stationary_prefix_samples=0.
+        if samples.shape[1] >= 3:
+            stationary[:, 2] = G
 
         full = np.vstack([stationary, samples.astype(np.float32)])
         self._n_samples = len(full)
@@ -257,15 +272,13 @@ class RenoneBridge:
 
         self.uart_log.unlink(missing_ok=True)
 
-        # Communicate log/sentinel paths to IronPython stubs via config files.
-        # IronPython cannot receive dynamic arguments; config files bridge the gap.
-        _LOG_CFG  = Path.home() / ".gait_uart_log_path.txt"
-        _SENT_CFG = Path.home() / ".gait_uart_sentinel_path.txt"
-        _LOG_CFG.write_text(str(self.uart_log))
+        # Communicate paths to IronPython stubs via config files.
+        _CFG_IMU_PATH.write_text(str(self.imu_sim))
+        _CFG_LOG_PATH.write_text(str(self.uart_log))
         sentinel = str(self.uart_log) + ".done"
-        _SENT_CFG.write_text(sentinel)
+        _CFG_SENT_PATH.write_text(sentinel)
 
-    def _start_renode(self):
+    def _start_renode(self) -> None:
         renode_bin = detect_renode()
         if not renode_bin:
             raise RuntimeError("renode binary not found on PATH")
@@ -301,7 +314,7 @@ class RenoneBridge:
             f"within {_BOOT_TIMEOUT_S}s{log_snippet}"
         )
 
-    def _configure_renode(self):
+    def _configure_renode(self) -> None:
         mon = self._monitor
 
         imu_stub_abs  = str(_IMU_STUB_PATH.resolve())
@@ -352,28 +365,27 @@ class RenoneBridge:
             raise RuntimeError(f"ELF load failed: {r.strip()}")
 
         # Fire UARTE0 IRQ on every TASKS_STARTTX write so Zephyr uart_poll_out()
-        # unblocks after each byte.  See sim_uart_stub.py for details.
+        # unblocks after each byte. See sim_uart_stub.py for details.
         wp_hook = "self.GetMachine().SystemBus.WriteDoubleWord(0xE000E200, 4)"
         r = mon.send(f'sysbus AddWatchpointHook 0x40002008 4 2 "{wp_hook}"')
         print(f"[Renode] WatchpointHook UART  : {r.strip()!r}")
 
         sentinel = str(self.uart_log) + ".done"
-        self._session_end_sentinel = Path(sentinel)
-        self._session_end_sentinel.unlink(missing_ok=True)
+        self._sentinel_path = Path(sentinel)
+        self._sentinel_path.unlink(missing_ok=True)
 
         r = mon.send('emulation RunFor "1.5"', timeout=60.0)
         print(f"[Renode] RunFor 1.5s (boot)   : {r.strip()!r}")
         r = mon.send('emulation RunFor "0.1"', timeout=30.0)
         print(f"[Renode] RunFor 0.1s (settle) : {r.strip()!r}")
 
-    def _wait_for_session_end(self):
+    def _wait_for_session_end(self) -> None:
         mon      = self._monitor
         odr      = 208.0
         walk_s   = self._n_samples / odr
-        budget_s = walk_s + 3.0
         elapsed  = 0.0
         chunk    = 0.5
-        sentinel = self._session_end_sentinel
+        sentinel = self._sentinel_path
 
         deadline = time.monotonic() + _SESSION_TIMEOUT_S
         while time.monotonic() < deadline:
@@ -382,15 +394,15 @@ class RenoneBridge:
             if sentinel and sentinel.exists():
                 return
             time.sleep(_POLL_INTERVAL_S)
-            if elapsed > budget_s + 5.0:
+            if elapsed > walk_s + 8.0:
                 break
 
         raise TimeoutError(
-            f"SESSION_END not seen after {elapsed:.1f}s simulated "
+            f"Session-end sentinel not seen after {elapsed:.1f}s simulated "
             f"({self._n_samples} samples, {walk_s:.1f}s)"
         )
 
-    def _stop_renode(self):
+    def _stop_renode(self) -> None:
         if self._monitor:
             try:
                 self._monitor.send("quit")
@@ -419,12 +431,12 @@ class RenoneBridge:
                     pass
                 setattr(self, attr, None)
 
-        if self._session_end_sentinel:
+        if self._sentinel_path:
             try:
-                self._session_end_sentinel.unlink(missing_ok=True)
+                self._sentinel_path.unlink(missing_ok=True)
             except Exception:
                 pass
-            self._session_end_sentinel = None
+            self._sentinel_path = None
 
         if self._renode_log_path:
             if self._sim_failed and self._renode_log_path.exists():
@@ -438,9 +450,3 @@ class RenoneBridge:
             except Exception:
                 pass
             self._renode_log_path = None
-
-    def _parse_uart_log(
-        self,
-    ) -> tuple[list[StepEvent], list[SnapshotEvent], list[SessionEndEvent]]:
-        text = self.uart_log.read_text(encoding="utf-8", errors="replace")
-        return parse_uart_log(text)

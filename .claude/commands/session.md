@@ -236,35 +236,89 @@ Failure modes:
 Simulation can also accept field measurement data as input (field data replay).
 **Entry condition:** Stage 0 closed.
 
-### Pipeline
+### Scaffold check (first run of Stage 1 only)
+
+Before running any simulation, check whether `src/events.py` exists:
+- **Exists:** print "Scaffold: src/ modules present — proceeding."
+- **Missing:** print the following and stop:
+  ```
+  SCAFFOLD REQUIRED: Project Python modules not yet generated.
+  Before running simulation:
+    1. Fill in docs/toolchain_config.md ## Firmware UART Format section
+       (session_end_marker + at least one [[event]] block)
+    2. Run /toolchain scaffold
+  This generates src/events.py, src/analysis.py, src/plot.py (infrastructure)
+  and src/signals.py, src/algorithm.py (stubs to implement).
+  Signal-only simulation requires src/signals.py and src/algorithm.py to be
+  implemented. Renode simulation requires the firmware ELF.
+  ```
+
+### Simulation paths
+
+Stage 1 supports two simulation paths. Both are valid. The stage gate requires
+at least one run from each.
 
 ```
-Physics-model path:
-    Define the physics model for your device domain
-    → Run simulation against model
-    → Signal plots (your signal plot mandate Amendment)
-    → Verify algorithm output matches physical expectation
+Path A — Signal-only (fast, no firmware):
+    src/signals.py::generate(profile, n_steps)   → sensor samples
+         │
+         ▼
+    src/algorithm.py::run(samples)               → metrics dict
+         │
+         ▼
+    Validate metrics against pass/fail threshold
+    → plotter (signal plot mandate)
 
-Field data replay path:
-    Capture raw sensor data from Stage 3 field test (or bench capture)
-    → Replay through simulation in place of physics model
-    → Verify simulation matches observed hardware behaviour
-    → If it doesn't: physics model is wrong — update model before fixing firmware
+    When to use: algorithm development, fast iteration, pre-firmware validation
+    Prerequisite: src/signals.py and src/algorithm.py implemented (not stubs)
+
+Path B — Renode (thorough, firmware in emulator):
+    src/signals.py::generate(profile, n_steps)   → sensor samples
+         │
+         ▼
+    RenoneBridge(elf_path).run(samples)          → UART text
+         │
+         ▼
+    src/analysis.py::PARSER.parse_log(text)      → events
+         │
+         ▼
+    Extract metrics → validate against threshold
+    → uart-reader (print to terminal) + plotter
+
+    When to use: firmware parity check, Stage 1 gate validation
+    Prerequisite: firmware ELF + Renode installed
+
+Path A+B — Both (parity check):
+    Run A then B on same profile → compare_paths() → divergence report
+    Any divergence = finding for Justice. Do not fix firmware until divergence
+    is explained: the Python model may be wrong, OR the firmware may be wrong.
+
+Field data replay (any stage):
+    Replace Path A's signal generator with field UART log replay
+    (src/analysis.py parses the field log the same way it parses Renode output)
+    → If replay diverges from simulation: physics model is wrong — update model,
+      re-run simulation, THEN look at firmware
 ```
 
-**Both paths use the same simulation pipeline.** The difference is the input source.
-
+**The simulator-operator agent handles path selection automatically.**
 Run `/plot-profile` for signal diagnostic plots after any algorithm parameter change.
 
 ### Exit criteria
-- [ ] Algorithm produces correct output on physics model (your domain-specific pass criteria)
+- [ ] Path A (signal-only): algorithm produces correct output on physics model for all profiles
+- [ ] Path B (Renode): firmware produces correct output for at least one profile
+- [ ] Path A+B parity: Python model and firmware agree within project tolerance (no unexplained divergence)
 - [ ] Algorithm tested under conditions where the correct answer is non-zero (mandatory — zero-output trap)
 - [ ] Signal plots reviewed by Justice
 - [ ] No unexplained deviation between simulation and any available field data
 
 **[JUSTICE GATE S1]** → before closing:
-1. Run `/code-review` — any ARTICLE-I-VIOLATION blocks gate.
-2. Run `/regression` — all profiles must pass threshold before gate.
+1. Run `/code-review` — include `src/` scaffolded modules in the audit.
+   Any ARTICLE-I-VIOLATION blocks gate. This is the confirmation step
+   required by Amendment 11 (Scaffold Immutability) — once the gate closes,
+   src/ modules are frozen. Print: "Amendment 11: src/ modules confirmed at
+   Stage 1 gate — re-scaffold now requires explicit human authorization + Bill."
+2. Run `/regression` — all profiles must pass threshold before gate. Run with both
+   paths if Path B (Renode) is available: signal-only matrix first, then Renode matrix.
 3. Invoke `police` to confirm no unauthorized changes this stage.
 4. Invoke `stage-compactor` to close Stage 1.
 

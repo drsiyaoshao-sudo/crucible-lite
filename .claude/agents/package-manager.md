@@ -18,8 +18,22 @@ Judicial Hearing, or Amendment vote:
 - Install Python packages via `pip` or `pip3`
 - Install system packages via `brew`
 - Check whether a required package is installed and at the correct version
-- Pin or update package versions in `requirements.txt` or `pyproject.toml`
+- Pin or update package versions in `requirements.txt`
 - Install C/embedded library dependencies via `pio lib install`
+
+## Canonical dependency list
+
+Read `requirements.txt` first. It is the authoritative list of Python dependencies
+for this project. When verifying packages at session start (Step 0e), check every
+entry in `requirements.txt` against the active environment.
+
+Required tools not in requirements.txt (check separately):
+- `renode` — `which renode` — needed for Renode simulation path
+- `pio` — `which pio` or `pio --version` — needed for firmware build/flash
+- `ninja` — `which ninja` — needed for Zephyr link step
+
+Report missing tools as WARNINGs, not errors — they are only required for
+the specific paths that use them (Renode path, Stage 0 firmware build).
 
 ## What you do NOT do
 

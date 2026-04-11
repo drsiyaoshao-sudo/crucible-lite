@@ -23,6 +23,7 @@ Every finding must cite the exact file and line number.
 | Amendment 7 | Calibration constants require derivation documentation — you flag violations |
 | Amendment 4 | Three ARTICLE-I-VIOLATIONs in one file → escalate; do not keep listing |
 | Amendment 10 | Print all findings before stopping — no silent omissions |
+| Amendment 11 | Scaffolded `src/` modules must be audited at Stage 1 gate; your confirmation freezes them |
 
 If Amendment 1 is not yet ratified, you cannot complete a review —
 the primitive names needed for traceability citations do not exist.
@@ -37,13 +38,17 @@ Read in this order. Do not begin review until all reads complete.
 1. `docs/governance/amendments.md`
    - Extract Amendment 1 domain primitives (names, units) — these are your Article I checklist
    - Note any calibration or algorithm amendments (Amendment 7 and above)
+   - Check Amendment 11 ratification status (governs src/ audit scope)
 2. `docs/device_context.md`
    - Signal Inventory: expected units, normal range, hard limits per signal
    - Operating Envelope: confirms the signal conditions the code must handle
 3. `docs/toolchain_config.md`
    - Active firmware repo path and source file list
    - Sample rate (Nyquist limit for filter checks)
+   - `## Firmware UART Format` — confirm src/ modules match these definitions
 4. All firmware and algorithm source files under the registered repo
+5. `src/events.py`, `src/analysis.py`, `src/plot.py` if they exist
+   (Amendment 11: scaffolded modules are subject to the same Article I audit as firmware)
 
 ---
 
@@ -103,6 +108,25 @@ For each calibration constant introduced since the last stage gate:
 
 Flag as **AMENDMENT-7-VIOLATION** if a constant has no derivation documentation.
 
+### Scaffold module audit (Amendment 11 — at Stage 1 gate only)
+
+If `src/events.py`, `src/analysis.py`, or `src/plot.py` exist and Stage 1 gate
+has not yet been closed:
+- Verify each parsed field in `src/events.py` traces to a Signal Inventory entry
+  in `docs/device_context.md` (field name, unit, and event type must match)
+- Verify each `EventDefinition` pattern in `src/analysis.py` matches the
+  corresponding `[[event]]` block in `docs/toolchain_config.md`
+- Verify each plot wrapper in `src/plot.py` uses domain primitive names and units
+  from Amendment 1 as its axis labels
+
+Flag as **AMENDMENT-11-VIOLATION** if:
+- A `src/` field has no matching Signal Inventory entry
+- A parser pattern does not match the declared UART format
+- A plot wrapper uses a label not traceable to Amendment 1
+
+If all Amendment 11 checks pass: print
+"Amendment 11: src/ modules confirmed — scaffold freeze takes effect at gate close."
+
 ---
 
 ## Output format
@@ -113,13 +137,14 @@ CODE REVIEW — [repo name] — [date]
 Source files reviewed: [N]
 ══════════════════════════════════════════════════════
 
-ARTICLE-I-VIOLATIONS  [N]
-ARTICLE-I-WARNINGS    [N]
-FILTER-ERRORS         [N]
-FILTER-WARNINGS       [N]
-FSM-ISSUES            [N]
-UNIT-MISMATCHES       [N]
-AMENDMENT-VIOLATIONS  [N]
+ARTICLE-I-VIOLATIONS    [N]
+ARTICLE-I-WARNINGS      [N]
+FILTER-ERRORS           [N]
+FILTER-WARNINGS         [N]
+FSM-ISSUES              [N]
+UNIT-MISMATCHES         [N]
+AMENDMENT-7-VIOLATIONS  [N]
+AMENDMENT-11-VIOLATIONS [N]  (scaffold modules — Stage 1 gate only)
 ──────────────────────────────────────────────────────
 
 [SEVERITY] [file:line] — [one-line description]
@@ -129,8 +154,10 @@ AMENDMENT-VIOLATIONS  [N]
 [repeat for each finding]
 
 ──────────────────────────────────────────────────────
-BLOCKS STAGE GATE: [yes/no — any ARTICLE-I-VIOLATION or FSM-DEAD-STATE blocks]
+BLOCKS STAGE GATE: [yes/no — any ARTICLE-I-VIOLATION, FSM-DEAD-STATE, or AMENDMENT-11-VIOLATION blocks]
 Bill required for each ARTICLE-I-VIOLATION before /session can advance.
+Amendment 11 violations must be resolved by correcting the scaffolded modules
+(via a Bill) before the Stage 1 gate can close.
 ══════════════════════════════════════════════════════
 ```
 

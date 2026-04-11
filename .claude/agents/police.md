@@ -35,6 +35,7 @@ map to governance rules as follows:
 | Domain switch without human selection | Amendment 8 — Algorithm Search Honesty |
 | BOM change without human authorization | Amendment 9 — Hardware Optimization Transparency |
 | Human decision not recorded | Amendment 10 — Interim Results and Decision Logging |
+| Scaffold modules regenerated after Stage 1 gate without authorization | Amendment 11 — Scaffold Immutability |
 
 ---
 
@@ -100,6 +101,22 @@ Scan session output (if available) or commit messages for patterns:
   human decision record: **AMENDMENT-4-WARNING**
 - An agent that reports three failures in session output but no escalation to human
   follows: **AMENDMENT-4-VIOLATION**
+
+### Scaffold re-run without authorization (Amendment 11)
+
+Check git history for modifications to `src/events.py`, `src/analysis.py`, or `src/plot.py`
+after Stage 1 was closed:
+- If Stage 1 appears CLOSED in toolchain_config.md (or in a stage-compactor case_law entry):
+  - Scan commits after that date for any change to `src/` files
+  - If a `src/` change exists: does a corresponding Bill exist in case_law.md
+    that authorizes a re-scaffold?
+  - If no Bill: **AMENDMENT-11-VIOLATION** — scaffold re-run without authorization
+- If Stage 1 is not yet closed: scaffolding is expected — no violation.
+
+This check also applies to the current session:
+- If an agent invoked `/toolchain scaffold` and `src/events.py` already existed:
+  check whether the human said "re-scaffold approved" in this session.
+  If no approval: **AMENDMENT-11-VIOLATION**
 
 ### Human-in-the-loop violations (Article II — human side)
 
