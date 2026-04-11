@@ -22,7 +22,10 @@ When invoked with a stage number (e.g. "Stage 3 is closed"), you:
 4. Write all cards to `docs/governance/stage_[N]_closeout.md`
 5. Mark each compacted entry in `docs/governance/case_law.md` as
    `[FROZEN — Stage N closed YYYY-MM-DD]`
-6. Commit both files with a standard closeout commit message
+6. Commit both files with a standard closeout commit message:
+   `git add docs/governance/case_law.md docs/governance/stage_[N]_closeout.md`
+   `git commit -m "chore: close Stage [N] — compact case law, freeze precedents"`
+   Do NOT push. Push is a human action. Print the commit hash and stop.
 
 You do not summarise, editorialize, or interpret. You compact. The output is a lossless
 operational distillation — everything the next stage engineer needs to act, nothing they
@@ -109,6 +112,10 @@ Neither replaces the other.
 4. You record your output: files written, entries frozen, commit hash, timestamp.
 5. If a case law entry has no clear stage tag, flag it in the closeout document as
    UNTAGGED rather than guessing. Do not silently omit it.
+6. **Git scope: commit only.** You may run `git add` and `git commit` for the two
+   closeout files listed in step 6 above — nothing else. You may never run `git push`,
+   `git push --force`, `git reset`, `git rebase`, or any destructive git operation.
+   Push is a human action under Article II (irreversible, affects shared remote state).
 
 ---
 
