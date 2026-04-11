@@ -4,11 +4,15 @@ Usage: /session [stage]
 
 Stages:
   status   — read constitutional record, print current stage and open gates
+  spec     — Spec Gate: collect device purpose, signal inventory, and domain primitives  ← NEW PROJECT ALWAYS STARTS HERE
   0        — Stage 0: HIL Toolchain Lock  ← ALWAYS FIRST on any new session or new hardware
   1        — Stage 1: Simulation (physics model or field data replay)
   2        — Stage 2: Firmware Integration on Dev Kit
   3        — Stage 3: Field Test
   4        — Stage 4: Host Integration
+
+Order for a new project: spec → 0 → 1 → 2 → 3 → 4
+Order for a returning session: status → [resume open stage]
 
 If no stage given, run status first, then ask Justice which stage to begin.
 
@@ -29,20 +33,53 @@ Article II irreversibility does not apply to Stage 0 — counter flashing is tri
 
 ## Session Initialisation (always runs first)
 
-**Step 0a — Toolchain config check:**
-Read `docs/toolchain_config.md`. If missing or lock status is not LOCKED: stop and print:
-  "Toolchain config missing or unlocked. Run /toolchain init (new project) or
-   /toolchain lock (Stage 0 complete) before starting a session."
+**Step 0a — Spec check:**
+Read `docs/device_context.md`. Check Device Purpose and Signal Inventory sections.
+If either section is a placeholder (contains "> [" template text) or missing: stop and print:
+  "Device spec not collected. Run /spec collect before starting any stage.
+   The spec establishes the project target and domain primitives that all
+   other agents use as their evidence base."
+If populated, print one-line summary:
+  "Project target: [project target line from device_context.md]"
+  "Pass/fail threshold: [threshold line from device_context.md]"
+
+**Step 0b — Toolchain config check:**
+Read `docs/toolchain_config.md`. If missing: stop and print:
+  "Toolchain config missing. Run /toolchain init before starting any stage."
+
+Check lock status against stage status:
+- Stage 0 NOT YET STARTED or OPEN: UNLOCKED is acceptable — Stage 0 will lock it.
+  Print: "Toolchain status: UNLOCKED — Stage 0 will lock it."
+- Stage 0 CLOSED but status is UNLOCKED: stop and print:
+  "Stage 0 is closed but toolchain is not locked. Run /toolchain lock."
+- Status LOCKED: proceed normally.
 
 Print active toolchain summary: board, FQBN, flash method, wireless transport.
 If any blocked toolchain appears in the active slot: stop and report the conflict.
 
-**Step 0b — Domain primitives check:**
+**Step 0c — Domain primitives check:**
 Read the project's Amendment 1 (Domain Primitives). Print them. If not yet ratified:
-  "Domain primitives not ratified. Name your physical primitives and ratify Amendment 1
-   before running any stage. See docs/governance/adoption_guide.md."
+  "Domain primitives not ratified. Run /spec collect — it drafts Amendment 1
+   and walks you through ratification."
 
-**Step 0c — Package check:**
+**Step 0d — Police check:**
+Invoke `police` agent to audit the last 10 commits and the current session for
+constitutional violations. Run this before printing the session header.
+
+New project detection: if git log returns no commits, or case_law.md exists but
+is empty (only placeholder text), skip the history audit and print:
+  "Police check: new project — no history to audit."
+
+If police reports any VIOLATION: print the violation report and stop.
+Print: "Constitutional violation detected. Justice must rule before session continues.
+See police report above."
+
+If police reports only WARNINGs: print them inline in the session header under
+a "⚠ Warnings" section. Session may proceed but warnings must be acknowledged.
+
+If police reports CLEAN: note "Police check: clean" in the session header.
+
+**Step 0e — Package check:**
 Invoke `package-manager` to verify required Python packages.
 Do not proceed until package-manager reports clean.
 
@@ -51,19 +88,21 @@ Print session header:
 ══════════════════════════════════════════════════════════════════
   CRUCIBLE SESSION — $(date)
 ══════════════════════════════════════════════════════════════════
-  Project: [read from docs/device_purpose.md first line]
-  Domain primitives: [from Amendment 1]
+  Project target:    [project target line from docs/device_context.md]
+  Pass/fail:         [threshold line from docs/device_context.md]
+  Domain primitives: [from Amendment 1, or "NOT RATIFIED — run /spec"]
 
   Constitutional record:
     Amendments: [N] ratified  — most recent: [title]
     Case law:   [N] precedents recorded
 
   Stage status:
-    Stage 0 — HIL Toolchain Lock:         [CLOSED / OPEN / NOT STARTED]
-    Stage 1 — Simulation:                 [CLOSED / OPEN / NOT STARTED]
-    Stage 2 — Firmware Integration:       [CLOSED / OPEN / NOT STARTED]
-    Stage 3 — Field Test:                 [CLOSED / OPEN / NOT STARTED]
-    Stage 4 — Host Integration:           [CLOSED / OPEN / NOT STARTED]
+    Spec Gate  — Device Specification:    [COLLECTED / NOT STARTED]
+    Stage 0    — HIL Toolchain Lock:      [CLOSED / OPEN / NOT STARTED]
+    Stage 1    — Simulation:              [CLOSED / OPEN / NOT STARTED]
+    Stage 2    — Firmware Integration:    [CLOSED / OPEN / NOT STARTED]
+    Stage 3    — Field Test:              [CLOSED / OPEN / NOT STARTED]
+    Stage 4    — Host Integration:        [CLOSED / OPEN / NOT STARTED]
 
   Active toolchain (from docs/toolchain_config.md):
     Board:    [hardware.board]
@@ -72,15 +111,57 @@ Print session header:
     Observe:  [active_toolchain.serial_monitor]
     Wireless: [active_toolchain.wireless_receiver]
 
-  Skills:
-    /session [stage]         — this orchestrator
-    /toolchain <subcommand>  — toolchain janitor
-    /hear "<name>" A vs B    — judicial hearing
-    /hw-advisor              — design suggestions from test results
-    /plot-evidence <type>    — evidence collection
-    /plot-profile <profile>  — signal diagnostic plot
+  Commands:
+    /spec [collect|review|signals|target]  — device spec and domain primitives
+    /session [stage]                       — this orchestrator
+    /toolchain <subcommand>                — toolchain janitor
+    /hear "<name>" A vs B                  — judicial hearing
+    /hw-advisor                            — hardware design suggestions from test results
+    /sw-advisor [focus]                    — algorithm design suggestions from signal profiles
+    /plot-evidence <type>                  — evidence collection
+    /plot-profile <profile>                — signal diagnostic plot
+    /compact [target]                      — compact spiralling documentation
+
+  Housekeeping (run any time, no stage gate required):
+    code-reviewer agent                    — Article I compliance, FSM integrity, unit checks
+    doc-reviewer agent                     — docs completeness and staleness gaps
+    constitution-auditor agent             — governance consistency (amendments vs case law)
+    bill-drafter agent                     — produce a debate-ready Bill from evidence
+    regression-runner agent                — full profile matrix pass/fail against threshold
 ══════════════════════════════════════════════════════════════════
 ```
+
+---
+
+## Spec Gate — Device Specification
+
+**Purpose:** Establish what the device does, the specific problem it solves, which signals
+it produces, and the domain primitives all other agents reason against.
+**Must complete before:** Stage 0, toolchain init, firmware writing, or any hearing.
+**Command:** `/spec collect`
+
+When `/session spec` is invoked, run `/spec collect` in full.
+When `/session status` is invoked and the spec gate is NOT COLLECTED, print:
+
+```
+⚠  SPEC GATE OPEN — run /spec collect before proceeding
+   Without a collected spec, domain primitives are undefined and Article I
+   cannot be enforced. Attorneys have no evidence base. hw-advisor cannot advise.
+```
+
+### Spec Gate exit criteria
+- [ ] `docs/device_context.md` Device Purpose section filled (no placeholder text)
+- [ ] Project target stated in one sentence (the specific hard case)
+- [ ] Pass/fail threshold stated as a measurable value
+- [ ] Signal Inventory table populated (at least one signal per domain primitive)
+- [ ] Domain primitives confirmed by human
+- [ ] Amendment 1 ratified and written to `docs/governance/amendments.md`
+
+**[JUSTICE GATE SPEC]** All criteria met → Spec Gate COLLECTED.
+Before closing: invoke `police` to confirm no violations exist in the governance record.
+Invoke `agent-updater` after Amendment 1 is ratified — domain primitives must propagate
+to code-reviewer, sw-advisor, hw-advisor, and bill-drafter.
+Run `/spec review` at any time to check for gaps.
 
 ---
 
@@ -90,7 +171,7 @@ Print session header:
 **Agents:** package-manager (already ran), uart-reader
 **Reference:** docs/testing/hil_testing_guide.md
 
-Implements your project's Smoke Test Order Amendment (equivalent of Amendment 16 in GaitSense).
+Implements your project's Smoke Test Order Amendment (see docs/governance/amendments.md).
 All four tests must pass in sequence. A failure at any step blocks further stages.
 
 ### Smoke Test 1 — Counter
@@ -141,8 +222,11 @@ Failure modes:
 
 [GATE 0.4] **Stage 0 CLOSED.**
 
-**[JUSTICE GATE S0]** All four tests pass → invoke `stage-compactor` to close Stage 0.
-Then run `/toolchain lock` to stamp toolchain config as Stage 0 validated.
+**[JUSTICE GATE S0]** All four tests pass → before closing:
+1. Invoke `police` to confirm no violations in this stage's work.
+2. Invoke `stage-compactor` to close Stage 0.
+3. Run `/toolchain lock` to stamp toolchain config as Stage 0 validated.
+4. If Amendment 3 (Toolchain Alignment) was ratified this stage, invoke `agent-updater`.
 
 ---
 
@@ -156,7 +240,7 @@ Simulation can also accept field measurement data as input (field data replay).
 
 ```
 Physics-model path:
-    Define walker/thermal/motion/optical model
+    Define the physics model for your device domain
     → Run simulation against model
     → Signal plots (your signal plot mandate Amendment)
     → Verify algorithm output matches physical expectation
@@ -174,11 +258,15 @@ Run `/plot-profile` for signal diagnostic plots after any algorithm parameter ch
 
 ### Exit criteria
 - [ ] Algorithm produces correct output on physics model (your domain-specific pass criteria)
-- [ ] Algorithm tested under conditions where the correct answer is non-zero (mandatory — BUG-013 class)
+- [ ] Algorithm tested under conditions where the correct answer is non-zero (mandatory — zero-output trap)
 - [ ] Signal plots reviewed by Justice
 - [ ] No unexplained deviation between simulation and any available field data
 
-**[JUSTICE GATE S1]** → invoke `stage-compactor` to close Stage 1.
+**[JUSTICE GATE S1]** → before closing:
+1. Run `/code-review` — any ARTICLE-I-VIOLATION blocks gate.
+2. Run `/regression` — all profiles must pass threshold before gate.
+3. Invoke `police` to confirm no unauthorized changes this stage.
+4. Invoke `stage-compactor` to close Stage 1.
 
 ---
 
@@ -193,24 +281,27 @@ Cross-validate that the dev kit port matches simulation predictions.
 ```
 1. Build and flash production firmware (algorithm + wireless output)
 2. USB serial monitoring path:
-   Walk / stimulate sensor / apply test input
-   → capture STEP#/event/reading lines
+   Stimulate sensor / apply test input
+   → capture event/reading lines
    → compare against Stage 1 simulation prediction
 3. Sensitivity test:
-   Apply known asymmetry / offset / anomaly
+   Apply known perturbation (asymmetry, offset, anomaly — per your domain primitive)
    → output must change measurably
-   (e.g. heel lift for gait; known temperature offset for thermostat)
 ```
 
 Tolerance: hardware vs simulation per your domain-specific Amendment
-(GaitSense uses ±5 spm cadence, ±6.3% SI)
+(set in your project's domain-primitive Amendment)
 
 ### Exit criteria
 - [ ] Output within tolerance of Stage 1 simulation on standard stimulus
 - [ ] Output changes measurably under known perturbation (sensitivity confirmed)
 - [ ] No firmware resets in ≥ 10 min continuous session
 
-**[JUSTICE GATE S2]** → invoke `stage-compactor` to close Stage 2.
+**[JUSTICE GATE S2]** → before closing:
+1. Run `/code-review` — any ARTICLE-I-VIOLATION or FSM-DEAD-STATE blocks gate.
+2. Run `/doc-review` — any BLOCKER in Test Results (no data for this stage) blocks gate.
+3. Invoke `police` to confirm no unauthorized firmware changes since Stage 1 gate.
+4. Invoke `stage-compactor` to close Stage 2.
 
 ---
 
@@ -233,17 +324,32 @@ At minimum:
 1. Baseline run — nominal conditions, measure primary output
 2. Perturbation run — known deviation from nominal, measure output change
 3. Edge case run — extreme but realistic conditions
-4. Data capture — all sessions logged for simulation replay
+4. Data capture — capture raw sensor output via `uart-reader` during each run.
+   Save logs to `docs/field_data/<session_date>_<profile>.log`.
+   Record in Test Results section of `docs/device_context.md`.
 
 ### Feedback loop to simulation
 
-After field test:
+After field test, replay field data through Stage 1 simulation:
+
 ```
-Field data → replay in Stage 1 simulation
-If simulation matches field: physics model is valid ✓
-If simulation does not match: update physics model, re-run Stage 1
-                              (do not fix firmware until simulation matches)
+uart-reader captures field session UART log
+         │
+         ▼
+docs/field_data/<date>_<profile>.log
+         │
+         ▼
+/regression --profile <field_profile>    ← add field log as a replay profile
+         │
+         ├─ Simulation matches field: physics model is valid ✓
+         └─ Simulation does not match:
+                Update physics model (Bill required)
+                Re-run /regression
+                Do NOT fix firmware until simulation matches field data
 ```
+
+The field replay profile name is added to the Signal Inventory in `docs/device_context.md`
+so `/regression` and `regression-runner` can discover and run it.
 
 ### Exit criteria
 - [ ] Baseline run: output within target range
@@ -251,7 +357,9 @@ If simulation does not match: update physics model, re-run Stage 1
 - [ ] Field data replayed in simulation: model validated or updated
 - [ ] All deviations explained and recorded in case law
 
-**[JUSTICE GATE S3]** → invoke `stage-compactor` to close Stage 3.
+**[JUSTICE GATE S3]** → before closing:
+1. Invoke `police` to confirm field test protocol was Justice-approved (Article II).
+2. Invoke `stage-compactor` to close Stage 3.
 
 ---
 
@@ -279,7 +387,9 @@ If simulation does not match: update physics model, re-run Stage 1
 - [ ] Automation trigger fires correctly with latency < [your target]
 - [ ] 30-min stability: no resets, no dropped data, no false triggers
 
-**[JUSTICE GATE S4 — FINAL]** → invoke `stage-compactor` to close Stage 4.
+**[JUSTICE GATE S4 — FINAL]** → before closing:
+1. Invoke `police` for a full audit — this is the final constitutional record review.
+2. Invoke `stage-compactor` to close Stage 4.
 
 ---
 
@@ -287,7 +397,22 @@ If simulation does not match: update physics model, re-run Stage 1
 
 - Article I: all thresholds trace to domain primitives — not to data fitting
 - Article II: no field test or host deployment without Justice approval
-- Amendment 1: domain primitives (your device-specific version)
+- Amendment 1: domain primitives (set by /spec collect — your device-specific version)
 - Amendment 2: stage gate order
 - Amendment 3: toolchain alignment
 - Amendment 4: three-strike escalation — three failures → /hear before new approach
+
+## New project checklist
+
+```
+[ ] /spec collect          — device purpose, project target, signal inventory, Amendment 1
+[ ] agent-updater          — run after Amendment 1 ratified (propagate primitives)
+[ ] /toolchain init        — register board, pins, libraries, repos
+[ ] Ratify Amendments 2–4  — remove PROPOSED prefix in amendments.md for each
+[ ] agent-updater          — run after Amendments 2–4 ratified (propagate stage gate/toolchain/three-strike)
+[ ] /session 0             — HIL toolchain lock (four smoke tests) → /toolchain lock
+[ ] /session 1             — simulation validation
+[ ] /session 2             — firmware integration
+[ ] /session 3             — field test
+[ ] /session 4             — host integration
+```

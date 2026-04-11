@@ -1,5 +1,7 @@
 # Onboarding — Start Here
 
+> **If you are Claude Code:** read [`CLAUDE.md`](CLAUDE.md) first. It tells you what governs your behaviour, where every file lives, and what you must not do without human approval.
+
 **Estimated time:** 30 minutes to first running session.
 
 ---
@@ -67,6 +69,211 @@ Run `/toolchain init` to record these formally. The toolchain janitor will walk 
 ### C. A git repository
 
 This framework uses git as the record of decisions. Every Bill enacted, every Amendment ratified, every case law ruling recorded — all of it is a commit. Without git history, you have no audit trail.
+
+---
+
+## Complete workflow map
+
+### New project (one-time setup)
+
+```
+START NEW PROJECT
+│
+├─► /spec collect ──────────────────────────────────────────────────────────────────────┐
+│     │  Interview: device purpose, project target, pass/fail threshold,                │
+│     │  signal inventory, domain primitives, operating envelope                        │
+│     │  Writes: docs/device_context.md                                                 │
+│     │  Drafts: Amendment 1 (Domain Primitives)                                        │
+│     ▼                                                                                 │
+│   Human ratifies Amendment 1?                                                         │
+│     No ──► revise and re-ask                                                          │
+│     Yes──► Amendment 1 written to docs/governance/amendments.md                      │
+│            agent-updater ──► propagates primitives to code-reviewer,                 │
+│                               sw-advisor, hw-advisor, bill-drafter                   │
+│                                                                                       │
+├─► /toolchain init ─────────────────────────────────────────────────────────────────┐  │
+│     Register: board, FQBN, pins, libraries, repos                                  │  │
+│     Writes: docs/toolchain_config.md (status: UNLOCKED)                            │  │
+│                                                                                     │  │
+├─► Ratify Amendments 2–4 ───────────────────────────────────────────────────────────┘  │
+│     Amendment 2: Stage Gate Order                                                      │
+│     Amendment 3: Toolchain Alignment                                                   │
+│     Amendment 4: Three-Strike Rule                                                     │
+│     (remove PROPOSED prefix in amendments.md for each)                                 │
+│                                                                                        │
+└─► Ready for /session 0 ◄───────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Every session start (session initialisation)
+
+```
+/session [stage]
+│
+Step 0a — Spec check
+│  Read docs/device_context.md
+│  Placeholder text? ──► STOP: "Run /spec collect"
+│  Populated? ──► print project target + threshold
+│
+Step 0b — Toolchain check
+│  Read docs/toolchain_config.md
+│  Missing? ──► STOP: "Run /toolchain init"
+│  Stage 0 not yet closed AND status UNLOCKED? ──► allow (Stage 0 will lock it)
+│  Stage 0 closed AND status UNLOCKED? ──► STOP: "Run /toolchain lock"
+│  Blocked toolchain in active slot? ──► STOP: report conflict
+│
+Step 0c — Domain primitives check
+│  Amendment 1 ratified? ──► print primitives
+│  Not ratified? ──► STOP: "Run /spec collect"
+│
+Step 0d — Police check
+│  New project (no commits, no case_law entries)? ──► skip, note "new project"
+│  Has history? ──► audit last 10 commits vs case_law.md
+│     VIOLATION found? ──► STOP: print violation report
+│     WARNINGs? ──► print inline, session continues with acknowledgement required
+│     CLEAN? ──► note "Police check: clean"
+│
+Step 0e — Package check
+│  package-manager verifies Python dependencies
+│  Any missing? ──► install, then continue
+│
+Print session header ──► show stage status, toolchain summary, commands
+│
+└─► Proceed to requested stage
+```
+
+---
+
+### Per-stage flow (generic — applies to all stages)
+
+```
+ENTER STAGE N
+│
+├─ Prerequisite: Stage N-1 CLOSED (enforced by Amendment 2)
+│
+├─ Work loop ─────────────────────────────────────────────────────────┐
+│   │                                                                  │
+│   │  Agent executes procedure (simulation / firmware / field test)   │
+│   │                                                                  │
+│   │  Failure? ──► attempt 2 ──► attempt 3 ──► STOP (Amendment 4)   │
+│   │              Three-strike: full report to human                  │
+│   │              Human selects domain ──► /draft-bill if needed      │
+│   │                                                                  │
+│   │  Output deviates unexpectedly?                                   │
+│   │    ──► /sw-advisor (algorithm) or /hw-advisor (hardware)         │
+│   │    ──► findings → /draft-bill → /hear → ruling → implement       │
+│   │                                                                  │
+│   │  Two agents produce conflicting results?                         │
+│   │    ──► /hear ──► ruling ──► case_law.md ──► agent-updater        │
+│   │                                                                  │
+│   └─────────────────────────────────────────── back to work loop ───┘
+│
+├─ Exit criteria check (human confirms each criterion explicitly)
+│
+├─ JUSTICE GATE ──────────────────────────────────────────────────────┐
+│   │                                                                  │
+│   ├─ /code-review ──► any ARTICLE-I-VIOLATION? ──► Bill required     │
+│   ├─ /doc-review  ──► any BLOCKER? ──► fix before gate               │
+│   ├─ police       ──► any VIOLATION? ──► STOP, rule before gate      │
+│   │                                                                  │
+│   │  All clean? ──► human confirms gate criteria met                 │
+│   │                                                                  │
+│   ├─ stage-compactor ──► freeze case law, write handoff record        │
+│   └─ Stage N marked CLOSED in toolchain_config.md                    │
+│
+└─► ENTER STAGE N+1
+```
+
+---
+
+### Bill and Hearing flow (any time a change is needed)
+
+```
+Change needed (algorithm, firmware, hardware, simulation)
+│
+├─► /draft-bill "problem description"
+│     bill-drafter reads: amendments.md, case_law.md,
+│                          device_context.md, source files
+│     Evidence gate: physical evidence must exist in record
+│     Amendment gate: must name governing Article/Amendment
+│     Outcome gate: expected improvement in domain primitive units
+│     Scope gate: specific files/functions/values named
+│        │
+│        ├─ Gates pass ──► complete Bill output
+│        └─ Gates fail ──► INCOMPLETE report: "run /regression or /plot-evidence first"
+│
+├─► Human reviews Bill
+│
+├─► /hear "Bill name" Position-A vs Position-B
+│     judicial-clerk ──► COURTROOM READY
+│     attorney-A + attorney-B argue in parallel
+│     (optional) /plot-evidence ──► generate requested evidence
+│     (optional) Justice asks clarifying questions
+│     Justice rules ──► prevailing position + physical basis
+│     Prevailing attorney writes to case_law.md
+│     agent-updater ──► if ruling changes agent scope: propose edits
+│
+└─► Implement on branch named in Bill ──► validate ──► merge
+```
+
+---
+
+### Housekeeping (on demand, no stage gate required)
+
+```
+On demand ──► any of:
+
+  /code-review    ──► code-reviewer  ──► ARTICLE-I, FSM, filters, units
+  /doc-review     ──► doc-reviewer   ──► docs completeness, staleness, cross-refs
+  /gov-audit      ──► constitution-auditor ──► amendment conflicts, orphaned entries
+  /regression     ──► regression-runner ──► simulator-operator ──► plotter + uart-reader
+  /sw-advisor     ──► sw-advisor     ──► profile matrix analysis, algorithm suggestions
+  /hw-advisor     ──► hw-advisor     ──► BOM, pins, signal integrity, enclosure
+  /compact        ──► stage-compactor or doc triage
+  /plot-profile   ──► plotter        ──► single profile diagnostic
+  /plot-evidence  ──► plotter        ──► hearing or validation evidence
+```
+
+---
+
+### Agent orchestration map
+
+```
+Commands (human-invoked)          Agents (AI-executed)
+─────────────────────────         ────────────────────────────────────────────
+
+/session ─────────────────────►  police
+                                  package-manager
+                                  stage-compactor
+                                  agent-updater (after Amendment ratification)
+
+/hear ────────────────────────►  judicial-clerk
+                                  ├─► attorney-A
+                                  ├─► attorney-B
+                                  └─► (optional) plotter, simulator-operator
+                                  agent-updater (after ruling)
+
+/regression ──────────────────►  regression-runner
+                                  └─► simulator-operator (per profile)
+                                        ├─► uart-reader
+                                        └─► plotter
+
+/plot-evidence ───────────────►  plotter
+/plot-profile ────────────────►  plotter
+
+/code-review ─────────────────►  code-reviewer
+/doc-review ──────────────────►  doc-reviewer
+/gov-audit ───────────────────►  constitution-auditor
+/draft-bill ──────────────────►  bill-drafter
+/sw-advisor ──────────────────►  sw-advisor
+/hw-advisor ──────────────────►  hw-advisor
+/compact ─────────────────────►  stage-compactor
+/toolchain ───────────────────►  (direct file writes — no agent)
+/spec ────────────────────────►  (direct file writes — no agent)
+
+/gen-new-agent ───────────────►  (human executes — no agent by design)
+```
 
 ---
 

@@ -1,11 +1,11 @@
-Declare and run a Judicial Hearing under the GaitSense Constitutional Governance system.
+Declare and run a Judicial Hearing under the Crucible Constitutional Governance system.
 
 Usage: /hear "<hearing name>" <position-A-description> vs <position-B-description>
 
 Examples:
   /hear "BLE MTU vs USB CDC as primary debug path" "BLE NUS primary — matches production path" vs "USB CDC primary — deterministic, no fragmentation"
   /hear "Arduino vs Zephyr re-evaluation" "unblock Zephyr — new overlay evidence" vs "keep Arduino — Amendment 16 block stands"
-  /hear "SI computation fabsf workaround" "remove BUG-013 workaround on real hardware" vs "keep workaround — compiler optimisation risk persists"
+  /hear "floating-point workaround removal" "remove compiler workaround on real hardware" vs "keep workaround — optimisation risk persists"
 
 If no arguments given, print this usage and the 7-step procedure below, then stop.
 
@@ -33,10 +33,13 @@ Position A: <position-A-description>
 Position B: <position-B-description>
 
 Constitutional grounding to check before arguing:
-  docs/gaitsense_code/amendments.md       — all ratified amendments (1–17)
-  docs/gaitsense_code/case_law.md         — all recorded precedents
-  docs/toolchain_config.md               — active toolchain, blocked tools, pin map, repo registry
-  CLAUDE.md Judicial Process §3–4         — Benjamin Franklin + Thomas Jefferson principles
+  docs/governance/amendments.md          — all ratified amendments
+  docs/governance/case_law.md            — all recorded precedents
+  CONSTITUTION.md Judicial Process §3–4  — Benjamin Franklin + Thomas Jefferson principles
+
+Evidence base to read before arguing:
+  docs/device_context.md                 — BOM, circuit notes, test results, signal measurements
+  docs/toolchain_config.md               — active hardware, pin map, blocked toolchains, repo registry
 
 Evidence commands available during this hearing:
   /plot-evidence signal <profile>         — IMU signal plot
@@ -47,13 +50,35 @@ Evidence commands available during this hearing:
 
 ---
 
+## Step 2b — Advisory pre-brief (optional but recommended)
+
+Before attorneys argue, the Justice may request an advisory pre-brief to ensure
+the evidence base is complete. This prevents attorneys from arguing past each other
+on missing evidence.
+
+If the hearing topic involves algorithm or firmware logic:
+  Suggest: "Run `/sw-advisor detect` (or relevant focus) before attorneys argue.
+  Findings become admissible evidence; attorneys may cite them."
+
+If the hearing topic involves hardware, BOM, or enclosure:
+  Suggest: "Run `/hw-advisor` before attorneys argue.
+  Findings become admissible evidence; attorneys may cite them."
+
+Advisory pre-briefs are Bureaucracy Standing Orders — no Bill or hearing required.
+The Justice decides whether to run them. If skipped, attorneys must work with
+existing evidence in docs/device_context.md.
+
+---
+
 ## Step 3 — Assign attorneys and launch arguments (parallel)
 
 Assign Attorney-A to Position A and Attorney-B to Position B (or reverse — assignment is random).
 Launch both attorney agents in parallel. Each must:
-1. Read `docs/gaitsense_code/amendments.md`
-2. Read `docs/gaitsense_code/case_law.md`
-3. Read any source files directly relevant to their position
+1. Read `docs/governance/amendments.md`
+2. Read `docs/governance/case_law.md`
+3. Read `docs/device_context.md` — BOM, circuit notes, test results, signal measurements
+4. Read `docs/toolchain_config.md` — hardware record and blocked toolchains
+5. Read any source files directly relevant to their position
 4. Present all four required argument elements:
    - Amendment(s) invoked (exact number and title)
    - Precedent (case name and date, or explicit statement of none)
@@ -84,17 +109,23 @@ the question asked. Print each Q&A clearly labelled:
 The Justice announces:
 - Which position prevails
 - The governing physical/empirical basis (Benjamin Franklin Principle)
-- The ultimate patient/hardware outcome protected (Thomas Jefferson Principle)
+- The device/hardware outcome protected (Thomas Jefferson Principle)
 - Any conditions or constraints on how the ruling is applied
 
 ---
 
 ## Step 7 — Record to case law
 
-The prevailing attorney writes the ruling to `docs/gaitsense_code/case_law.md`
+The prevailing attorney writes the ruling to `docs/governance/case_law.md`
 using the standard case law template. The record must be complete before any
 implementation work begins. This is a hard gate — implementation cannot start
 until the ruling is recorded.
+
+After the ruling is recorded:
+- If the ruling enacts a Bill that changes agent scope (new Standing Order,
+  new checklist item, new toolchain constraint): invoke `agent-updater` with
+  the Bill name. It will identify affected agents and propose edits.
+- The Justice reviews and applies any proposed agent edits before implementation begins.
 
 Standard case law entry format:
 ```
@@ -104,7 +135,7 @@ Standard case law entry format:
 **Prevailing position:** [A or B]
 **Justice's ruling:** [ruling text]
 **Physical/empirical basis:** [evidence cited]
-**Patient outcome protected:** [Thomas Jefferson statement]
+**Device outcome protected:** [Thomas Jefferson statement]
 **Conditions:** [any constraints on application]
 **Enacted bill (if any):** [bill name, or "none"]
 **Implementation branch:** [branch name, or "none"]
@@ -124,7 +155,7 @@ If a nested hearing must be declared during argument (Step 3–5):
 
 ## Constitutional References
 
-This command implements CLAUDE.md Judicial Process §1–5.
+This command implements CONSTITUTION.md Judicial Process §1–5.
 - §1 Jurisdiction: conflict between amendments, unaddressed situation, agent uncertainty
 - §2 Roles: Justice (human), Attorneys (AI), Record (case_law.md)
 - §3 Benjamin Franklin Principle: empirical evidence only

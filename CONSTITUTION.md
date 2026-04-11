@@ -1,5 +1,7 @@
 # Crucible Constitutional Governance Document
 
+> **This document must not be modified.** All project-specific rules are Amendments. All conflicts are resolved by Judicial Hearing. The Articles are unconditional.
+
 ## Preamble
 
 This document governs all development decisions in any project that adopts the Crucible framework. It binds human engineers and AI agents equally. The two Articles below are unconditional — they cannot be amended, suspended, or reasoned around. All operational rules derive from them as Amendments. All conflicts between Amendments are resolved through the four-branch governance system defined herein.
@@ -51,12 +53,16 @@ Amendments are the operational rules of your specific project. They derive from 
 The GaitSense reference implementation has 17 ratified Amendments. They are documented at `examples/gait_wearable/amendments.md` as a concrete example of what device-specific Amendments look like.
 
 **Mandatory starting point:** Every Crucible project must ratify at minimum:
-- An Amendment defining its domain primitives (Article I implementation)
-- An Amendment defining its stage gate order
-- An Amendment defining its toolchain alignment record
-- An Amendment defining its three-strike escalation rule
+- An Amendment defining its domain primitives (Article I implementation) — written by `/spec collect`
+- An Amendment defining its stage gate order — pre-drafted as Amendment 2
+- An Amendment defining its toolchain alignment record — pre-drafted as Amendment 3
+- An Amendment defining its three-strike escalation rule — pre-drafted as Amendment 4
 
 These four are the minimum viable governance layer. Everything else grows from them.
+
+Amendments 2–4 (and optional Amendments 5–10) are pre-drafted in `docs/governance/amendments.md`.
+Read them, confirm they apply to your project, and ratify by removing the PROPOSED prefix.
+Amendment 1 is written by `/spec collect` after domain primitive ratification.
 
 ---
 
@@ -161,7 +167,7 @@ Where Amendments and precedents are silent or ambiguous, the Justice asks: *whic
 4. **Argument — Position B.** Same four elements.
 5. **Deliberation.** Justice may ask one clarifying question per attorney.
 6. **Ruling.** Justice announces prevailing position, physical/empirical basis, patient/user outcome protected, any conditions.
-7. **Recording.** Prevailing attorney records the ruling in `docs/gaitsense_code/case_law.md` (or your project's equivalent) before any implementation begins.
+7. **Recording.** Prevailing attorney records the ruling in `docs/governance/case_law.md` before any implementation begins.
 
 ### Binding effect
 

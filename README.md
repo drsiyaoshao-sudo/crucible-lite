@@ -1,6 +1,6 @@
-# Crucible — Hardware CI/CD Framework
+# Crucible-Lite — Hardware CI/CD Framework for embbeded design
 
-**Crucible** is an agent-assisted framework for bringing CI/CD discipline to hardware product development. It is designed for **system integrators** — engineers who design circuits, choose sensors, write firmware, and need a structured, repeatable path from algorithm idea to deployed device.
+**Crucible-Lite** is an agent-assisted framework for bringing CI/CD discipline to hardware product development. It is designed for **system integrators** — engineers who design circuits, choose sensors, write firmware, and need a structured, repeatable path from algorithm idea to deployed device.
 
 It is not a build tool. It is not a hardware description language. It is a **governance model** that turns human decisions into traceable, physical-evidence-backed records — the same way good software CI/CD turns code changes into auditable commit histories.
 

@@ -32,7 +32,7 @@ All state lives in `docs/toolchain_config.md`.
 - The janitor never overwrites human edits without showing a diff first
 
 Agents that need toolchain context must read this file first. They must not assume a toolchain
-from CLAUDE.md amendments alone — amendments say what is allowed, the config file says what
+from CONSTITUTION.md amendments alone — amendments say what is allowed, the config file says what
 is currently wired up.
 
 ---
@@ -119,7 +119,7 @@ Prompt for:
 - Active branch
 - Purpose (one sentence: what this repo contributes)
 - Agent commands or scripts available in this repo that are usable cross-repo
-- Access notes (e.g., "read-only reference — do not commit here from gait_device sessions")
+- Access notes (e.g., "read-only reference — do not commit here from other project sessions")
 
 Write to Repository Registry section.
 
@@ -130,7 +130,7 @@ Write to Repository Registry section.
 Prompt for:
 - Which toolchain layer is being blocked (build, flash, serial monitor, simulation, etc.)
 - The specific tool/framework being blocked
-- Reason (must cite a failure mode — Amendment 7 three-strike rule evidence, or Amendment 16 block)
+- Reason (must cite a failure mode — Amendment 4 three-strike rule evidence, or prior smoke test failure)
 - Date
 - What triggered the block (test result, error message, simulation failure)
 
@@ -145,7 +145,7 @@ Write to Blocked Toolchains section.
 
 This subcommand cannot complete by itself. It must:
 1. Show the current block record
-2. Print: "Unblocking a toolchain requires a Judicial Hearing per Amendment 16."
+2. Print: "Unblocking a toolchain requires a Judicial Hearing per Amendment 3 (Toolchain Alignment)."
 3. Prompt: "Invoke /hear to open a hearing on this unblock? (yes/no)"
 4. If yes: invoke /hear with a pre-filled declaration:
    Hearing: "Unblock [label] toolchain"
@@ -187,7 +187,7 @@ Checks:
 1. **Blocked toolchain in active slot** — if any layer's active tool appears in the Blocked list, flag as ERROR
 2. **Missing required fields** — Hardware: board, MCU, IMU. Toolchain: build FQBN, flash method, serial monitor. Flag blank required fields as WARNING
 3. **Library version pinned** — any library with version = "latest" or blank → WARNING
-4. **Amendment 17 alignment** — active toolchain table in config must match the table in docs/gaitsense_code/amendments.md. Mismatch → ERROR
+4. **Toolchain Amendment alignment** — active toolchain table in config must match the table in docs/governance/amendments.md. Mismatch → ERROR
 5. **Repo paths exist** — for local repo paths: check the path exists on disk. Missing → WARNING
 6. **Pin conflicts** — if two signals share the same nRF52840 port/pin → ERROR (e.g., P0.27 as both SCL and button)
 7. **Blocked toolchain without reason** — a block entry with no failure mode cited → WARNING (Amendment 7 requires evidence)
@@ -264,9 +264,9 @@ and report the gaps to the human before proceeding.
 ## Constitutional References
 
 - Article II: no toolchain switch without human decision (the block/unblock gate enforces this)
-- Amendment 7: three-strike rule — block entries in this file are the formal record of strikes
-- Amendment 16: smoke test order and path switching rule (Stage 0 lock = HIL confirmation)
-- Amendment 17: toolchain alignment — this file is the live implementation of Amendment 17's active toolchain record
+- Amendment 4: three-strike rule — block entries in this file are the formal record of strikes
+- Amendment 2: stage gate order — Stage 0 lock (HIL confirmation) is a hard gate in the stage sequence
+- Amendment 3: toolchain alignment — this file is the live implementation of Amendment 3's active toolchain record
 
 Now parse "$ARGUMENTS":
   First word is the subcommand (status, init, add, block, unblock, lock, validate, diff).

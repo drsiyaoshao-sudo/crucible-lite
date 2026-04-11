@@ -1,4 +1,4 @@
-Read the project's existing circuit description, BOM, and test results — then provide grounded design suggestions. The hw-advisor does not redesign; it suggests specific changes backed by physical evidence from your own tests.
+Invoke the hw-advisor agent to review hardware design decisions against test results and domain primitives.
 
 Usage: /hw-advisor [focus]
 
@@ -18,14 +18,13 @@ If no arguments: run full review.
 
 Before making any suggestion, hw-advisor reads these sources in order:
 
-1. `docs/toolchain_config.md` — hardware record, pin map, blocked toolchains
-2. `docs/device_purpose.md` — what the device does and who depends on it
-3. Your project's Amendments — domain primitives and stage gate record
-4. The most recent test results available:
-   - USB serial logs from Stage 2 (if present)
-   - Field test data from Stage 3 (if present)
-   - Signal plots from `docs/.../plots/` (if present)
-   - Bug receipt from `docs/.../bug_receipt.md` (if present)
+1. `docs/device_context.md` — Device Purpose, BOM, Circuit Notes, Test Results, Open Anomalies
+2. `docs/toolchain_config.md` — hardware record, pin map, blocked toolchains
+3. `docs/governance/amendments.md` — domain primitives and stage gate record
+
+`docs/device_context.md` is the primary evidence source. If it is missing or
+its Test Results section is empty, hw-advisor cannot produce grounded suggestions
+(see "When hw-advisor cannot help" below).
 
 hw-advisor does NOT read datasheets, perform EMC analysis, or model thermal behaviour
 without a specific test result that points to one of those as a root cause.
@@ -129,8 +128,10 @@ In these cases, hw-advisor states the gap and asks: "Do you want to add a test t
 
 ---
 
-Now read the sources listed above and produce the hw-advisor report focused on "$ARGUMENTS".
+Now read `docs/device_context.md`, `docs/toolchain_config.md`, and
+`docs/governance/amendments.md`, then produce the hw-advisor report focused on "$ARGUMENTS".
 If no focus is given, produce the full review.
-If no test data exists yet (Stage 0 not closed), print:
-  "No test data available. Complete Stage 0 and at least one of Stage 1–3 before hw-advisor
-   can produce evidence-based suggestions. Run /session 0 to start."
+If `docs/device_context.md` is missing or its Test Results section contains no entries, print:
+  "No test data available. Populate docs/device_context.md (Test Results section) after
+   completing Stage 0 and at least one of Stage 1–3 before hw-advisor can produce
+   evidence-based suggestions. Run /session 0 to start."
