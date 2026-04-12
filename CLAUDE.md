@@ -41,7 +41,7 @@ crucible/                           ← infrastructure Python (no domain knowled
 src/                                ← generated project Python (events, analysis, plot)
                                       run /toolchain scaffold to create this directory
 .claude/agents/                     ← 17 agent definitions
-.claude/commands/                   ← 15+ slash command definitions
+.claude/commands/                   ← 10 slash command definitions
 ONBOARDING.md                       ← workflow maps and flowcharts
 ```
 
@@ -104,7 +104,7 @@ hard stop.
 
 ---
 
-## The command set (16 commands)
+## The command set (10 commands)
 
 ### Orchestration
 | Command | What it does |
@@ -117,28 +117,28 @@ hard stop.
 ### Judicial
 | Command | What it does |
 |---|---|
-| `/hear "<name>" A vs B` | Declare a Judicial Hearing |
-| `/draft-bill <description>` | Produce a debate-ready Bill from evidence |
+| `/judicial hear "<name>" A vs B` | Declare a Judicial Hearing |
+| `/judicial bill <description>` | Produce a debate-ready Bill from evidence |
 
 ### Advisory
 | Command | What it does |
 |---|---|
-| `/hw-advisor [focus]` | Hardware design suggestions |
-| `/sw-advisor [focus]` | Algorithm design suggestions |
+| `/advisor hw [focus]` | Hardware design suggestions |
+| `/advisor sw [focus]` | Algorithm design suggestions |
 
 ### Evidence and validation
 | Command | What it does |
 |---|---|
 | `/regression [profile]` | Full simulation profile matrix |
-| `/plot-profile <profile>` | Single signal diagnostic plot |
-| `/plot-evidence <type> [args]` | Evidence for a hearing or validation |
+| `/plot profile <name>` | Single signal diagnostic plot |
+| `/plot evidence <type> [args]` | Evidence for a hearing or validation |
 
 ### Housekeeping
 | Command | What it does |
 |---|---|
-| `/code-review [focus]` | Article I compliance audit |
-| `/doc-review [focus]` | Documentation gap audit |
-| `/gov-audit [focus]` | Governance record consistency audit |
+| `/review code [focus]` | Article I compliance audit |
+| `/review doc [focus]` | Documentation gap audit |
+| `/review gov [focus]` | Governance record consistency audit |
 | `/gen-new-agent <name>` | Human-executed protocol to add an agent |
 
 ---
@@ -166,7 +166,7 @@ Any proposed change to:
 - Software pipeline (new stage, new metric)
 - Hardware (BOM change, sensor repositioning, enclosure)
 
-Use `/draft-bill <description>` to produce the Bill. Then `/hear` to debate it.
+Use `/judicial bill <description>` to produce the Bill. Then `/judicial hear` to debate it.
 
 ## What requires a Hearing (Judicial Process)
 
@@ -176,7 +176,7 @@ Use `/draft-bill <description>` to produce the Bill. Then `/hear` to debate it.
 - A blocked toolchain is proposed for unblocking
 - Three-strike escalation: a fix fails three times (Amendment 4)
 
-Use `/hear "<hearing name>" <position A> vs <position B>`.
+Use `/judicial hear "<hearing name>" <position A> vs <position B>`.
 
 ## What requires human approval before execution (Article II)
 
