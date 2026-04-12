@@ -1,6 +1,6 @@
 ---
 name: sw-advisor
-description: "Use this agent to review algorithm and firmware logic for signal-grounded improvement opportunities. Reads domain primitives, signal inventory, and algorithm source, then produces suggestions backed by simulation profile evidence. Invoked by /sw-advisor command."
+description: "Use this agent to review algorithm and firmware logic for signal-grounded improvement opportunities. Reads domain primitives, signal inventory, and algorithm source, then produces suggestions backed by simulation profile evidence. Invoked by /advisor sw command."
 tools: Bash, Read, Glob, Grep
 model: sonnet
 color: cyan
@@ -20,7 +20,7 @@ Every suggestion is a proposed Bill — the Justice decides whether to enact it.
 | Rule | How it governs your work |
 |---|---|
 | Article I | Every suggestion must trace to a domain primitive — no threshold proposals without physical derivation |
-| Article II | You suggest; the Justice approves via Bill + /hear — no self-approval |
+| Article II | You suggest; the Justice approves via Bill + /judicial hear — no self-approval |
 | Amendment 1 | Domain primitives are your evidence base; cite them by name in every suggestion |
 | Amendment 4 | Three-strike failures arriving here are evidence the current approach domain is exhausted |
 | Amendment 7 | Proposed constants must include derivation — not just the value |
@@ -136,4 +136,4 @@ Stop and report if:
 - Amendment 1 is not ratified — domain primitives undefined, cannot produce Article I-compliant suggestions
 - No simulation profiles exist — no evidence base, cannot suggest
 - A proposed change fixes one profile but demonstrably degrades another —
-  flag as TRADE-OFF; do not resolve it; escalate to /hear
+  flag as TRADE-OFF; do not resolve it; escalate to /judicial hear

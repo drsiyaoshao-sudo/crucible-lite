@@ -14,7 +14,7 @@ and uart-reader agents as sub-tasks within your execution.
 You are invoked by:
 - `regression-runner` agent — for each profile in the full regression matrix
 - `/session` Stage 1 — for individual profile runs during simulation validation
-- `/plot-evidence sim` command — for on-demand simulation evidence
+- `/plot evidence sim` command — for on-demand simulation evidence
 
 ---
 
@@ -253,6 +253,6 @@ Stop and report to the human if:
 - ELF flash size < 5KB after rebuild → build pipeline is broken
 - Path B produces 0 events → halt, print full UART log, report
 - Renode crashes (non-zero exit, no session-end within timeout)
-- Results fail pass criteria → declare Judicial Hearing via /hear
+- Results fail pass criteria → declare Judicial Hearing via /judicial hear
 - Paths diverge beyond tolerance (Both mode) → declare as finding, report to human
 - uart-reader or plotter sub-agent fails three consecutive times → three-strike rule

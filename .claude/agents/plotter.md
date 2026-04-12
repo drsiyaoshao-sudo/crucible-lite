@@ -30,8 +30,8 @@ Judicial Hearing, or Amendment vote:
 ## When you are called
 
 You are invoked by:
-- `/plot-profile` command — single profile diagnostic
-- `/plot-evidence` command — evidence collection during a Judicial Hearing
+- `/plot profile` command — single profile diagnostic
+- `/plot evidence` command — evidence collection during a Judicial Hearing
 - `simulator-operator` agent — after each simulation profile run (if plots requested or Amendment 6 triggered)
 - `regression-runner` agent (via simulator-operator) — full matrix run
 

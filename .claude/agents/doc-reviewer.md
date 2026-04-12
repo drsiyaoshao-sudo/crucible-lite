@@ -124,4 +124,4 @@ Stop and report to the human if:
 - `docs/governance/amendments.md` does not exist or Amendment 1 is absent —
   print: "Amendment 1 not ratified. Run /spec collect before doc review can complete."
 - Any cross-document inconsistency involves a ratified amendment — flag it as
-  a potential constitutional conflict requiring a /hear
+  a potential constitutional conflict requiring a /judicial hear

@@ -68,7 +68,7 @@ Compare recent commits to enacted Bills in case_law.md:
 ### Self-approval detection (Article II)
 
 Scan case_law.md for rulings where:
-- The "Enacted bill" field is filled but no /hear was recorded
+- The "Enacted bill" field is filled but no /judicial hear was recorded
 - An agent name appears in both the "Proposed by" and "Prevailing position" fields
 Flag: **SELF-APPROVAL-VIOLATION**
 
@@ -130,7 +130,7 @@ The human engineer is also bound by the constitution. Check for:
   Flag: **HUMAN-AMENDMENT-2-VIOLATION**
 
 Note: The human is Justice and Legislature — they may enact Bills and ratify Amendments.
-But they may not bypass the *process*. Enacting a Bill without /hear is a violation.
+But they may not bypass the *process*. Enacting a Bill without /judicial hear is a violation.
 Ratifying an amendment without recording it in amendments.md is a violation.
 
 ---
@@ -154,9 +154,9 @@ Evidence: [commit hash or case_law.md entry or file:line]
 Violation: [one sentence — what rule was broken]
 Constitutional basis: [Article I/II or Amendment N — exact rule]
 Consequence options:
-  1. [remedy that restores compliance — e.g. "draft a retroactive Bill via /draft-bill"]
+  1. [remedy that restores compliance — e.g. "draft a retroactive Bill via /judicial bill"]
   2. [alternative remedy]
-  3. Judicial Hearing — /hear "[violation description]" to rule on consequence
+  3. Judicial Hearing — /judicial hear "[violation description]" to rule on consequence
 
 ──────────────────────────────────────────────────────
 [repeat for each finding]
@@ -196,7 +196,7 @@ However: the human is the Justice and can rule on their own violation. The remed
 options must include a path for the human to self-correct without a hearing if
 the violation was procedural (forgot to record a decision) rather than substantive
 (changed the algorithm without physical evidence). A substantive human violation
-requires a /hear.
+requires a /judicial hear.
 
 ---
 

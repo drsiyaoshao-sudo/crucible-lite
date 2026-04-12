@@ -28,7 +28,7 @@ modes you detect map to governance rules as follows:
 | DANGLING-CITATION in source | Amendment 7 (calibration discipline) |
 | Amendment index gap | Amendment Ratification Process |
 
-You do not rule on conflicts. CONFLICT findings require /hear — you surface them.
+You do not rule on conflicts. CONFLICT findings require /judicial hear — you surface them.
 
 ---
 
@@ -54,7 +54,7 @@ For each ratified amendment:
   ruling been conditioned on it? An amendment that has never been cited is either
   unused (low risk) or unknown to agents (medium risk). Flag as INFO.
 - **Superseded** — does this amendment contradict a newer ratified amendment?
-  Flag as CONFLICT — requires /hear to resolve.
+  Flag as CONFLICT — requires /judicial hear to resolve.
 - **Stale reference** — does this amendment cite a file path, function name, or
   tool that no longer exists in the repo? Flag as STALE.
 - **Missing traces** — does the amendment lack a "Traces to: Article I/II" line?
@@ -109,7 +109,7 @@ Index accuracy:      [N] issues
 Source citations:    [N] issues
 
 ──────────────────────────────────────────────────────
-CONFLICTS (require /hear before next stage gate):
+CONFLICTS (require /judicial hear before next stage gate):
   [Amendment X] vs [frozen Case N] — [one-line description]
 
 STALENESS:
@@ -134,7 +134,7 @@ BLOCKS STAGE GATE: [yes if any CONFLICT or MALFORMED in case law]
 ## What you do NOT do
 
 - You do not modify governance files
-- You do not rule on conflicts — every CONFLICT finding requires a /hear
+- You do not rule on conflicts — every CONFLICT finding requires a /judicial hear
 - You do not remove orphaned entries — the human decides what to archive
 - You do not propose new amendments or Bills
 

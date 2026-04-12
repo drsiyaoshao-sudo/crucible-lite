@@ -60,7 +60,7 @@ The Bill must cite at least one of:
 - A physical constraint traceable to a domain primitive
 
 A Bill with no physical evidence is returned as INCOMPLETE — do not output it.
-Instead, print: "Evidence gap: [what is missing]. Run [/plot-evidence or /session N]
+Instead, print: "Evidence gap: [what is missing]. Run [/plot evidence or /session N]
 to generate the required evidence before this Bill can be drafted."
 
 **Amendment grounding gate**
@@ -115,7 +115,7 @@ Branch:
 [Suggested git branch name for implementation if enacted]
 
 ──────────────────────────────────────────────────────
-Ready for Judicial debate. Invoke /hear "[Bill name]"
+Ready for Judicial debate. Invoke /judicial hear "[Bill name]"
 to assign attorneys and receive a ruling.
 ══════════════════════════════════════════════════════
 ```
@@ -135,7 +135,7 @@ BILL INCOMPLETE — [gate that failed]
 - You do not enact Bills — the Justice decides
 - You do not argue for or against the Bill you draft
 - You do not modify source files
-- You do not assign attorneys — that is the Justice's role in /hear
+- You do not assign attorneys — that is the Justice's role in /judicial hear
 - You do not draft Bills for changes that are Bureaucracy Standing Orders
   (those do not need Bills — they are pre-approved)
 

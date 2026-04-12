@@ -95,8 +95,8 @@ Summary: [N] PASS  [N] FAIL  [N] ERROR  of [total] profiles
 
 [If any FAIL]:
   ⚠  [N] profile(s) failed. Stage gate BLOCKED.
-  Run /sw-advisor to investigate signal-level root cause.
-  Three consecutive failures on any profile → /hear required (Amendment 4).
+  Run /advisor sw to investigate signal-level root cause.
+  Three consecutive failures on any profile → /judicial hear required (Amendment 4).
 
 [If any ERROR]:
   ✗  Simulation pipeline error. Investigate before proceeding.
@@ -108,7 +108,7 @@ Summary: [N] PASS  [N] FAIL  [N] ERROR  of [total] profiles
 
 ## What you do NOT do
 
-- You do not interpret why a profile failed — that is /sw-advisor's role
+- You do not interpret why a profile failed — that is /advisor sw's role
 - You do not propose fixes — report, then stop
 - You do not modify firmware or signal model parameters
 - You do not skip profiles that were previously failing

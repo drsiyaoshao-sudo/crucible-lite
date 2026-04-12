@@ -93,7 +93,7 @@ Human action required:
 Total: [N] agents require updates, [N] commands require updates
 Apply these edits to keep agent scopes consistent with the ratified governance record.
 If any proposed change would alter an agent's Standing Order class (not just its
-checklist), that requires a separate /hear before it can be applied.
+checklist), that requires a separate /judicial hear before it can be applied.
 ══════════════════════════════════════════════════════
 ```
 
@@ -121,7 +121,7 @@ Invoke agent-updater immediately after:
 
 Stop and report if:
 - The triggering amendment conflicts with an existing agent's Standing Order —
-  this is a constitutional conflict requiring /hear before any agent update
+  this is a constitutional conflict requiring /judicial hear before any agent update
 - The proposed change would give a Bureaucracy agent decision-making authority —
   escalate to Justice; that requires a Standing Order class change via Bill
 - Any proposed change is to an agent that is currently mid-session (report as
