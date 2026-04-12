@@ -180,14 +180,14 @@ ENTER STAGE N
 │   │                                                                  │
 │   │  Failure? ──► attempt 2 ──► attempt 3 ──► STOP (Amendment 4)   │
 │   │              Three-strike: full report to human                  │
-│   │              Human selects domain ──► /draft-bill if needed      │
+│   │              Human selects domain ──► /judicial bill if needed   │
 │   │                                                                  │
 │   │  Output deviates unexpectedly?                                   │
-│   │    ──► /sw-advisor (algorithm) or /hw-advisor (hardware)         │
-│   │    ──► findings → /draft-bill → /hear → ruling → implement       │
+│   │    ──► /advisor sw (algorithm) or /advisor hw (hardware)         │
+│   │    ──► findings → /judicial bill → /judicial hear → implement    │
 │   │                                                                  │
 │   │  Two agents produce conflicting results?                         │
-│   │    ──► /hear ──► ruling ──► case_law.md ──► agent-updater        │
+│   │    ──► /judicial hear ──► ruling ──► case_law.md ──► agent-updater│
 │   │                                                                  │
 │   └─────────────────────────────────────────── back to work loop ───┘
 │
@@ -195,8 +195,8 @@ ENTER STAGE N
 │
 ├─ JUSTICE GATE ──────────────────────────────────────────────────────┐
 │   │                                                                  │
-│   ├─ /code-review ──► any ARTICLE-I-VIOLATION? ──► Bill required     │
-│   ├─ /doc-review  ──► any BLOCKER? ──► fix before gate               │
+│   ├─ /review code ──► any ARTICLE-I-VIOLATION? ──► Bill required     │
+│   ├─ /review doc  ──► any BLOCKER? ──► fix before gate               │
 │   ├─ police       ──► any VIOLATION? ──► STOP, rule before gate      │
 │   │                                                                  │
 │   │  All clean? ──► human confirms gate criteria met                 │
@@ -214,7 +214,7 @@ ENTER STAGE N
 ```
 Change needed (algorithm, firmware, hardware, simulation)
 │
-├─► /draft-bill "problem description"
+├─► /judicial bill "problem description"
 │     bill-drafter reads: amendments.md, case_law.md,
 │                          device_context.md, source files
 │     Evidence gate: physical evidence must exist in record
@@ -223,14 +223,14 @@ Change needed (algorithm, firmware, hardware, simulation)
 │     Scope gate: specific files/functions/values named
 │        │
 │        ├─ Gates pass ──► complete Bill output
-│        └─ Gates fail ──► INCOMPLETE report: "run /regression or /plot-evidence first"
+│        └─ Gates fail ──► INCOMPLETE report: "run /regression or /plot evidence first"
 │
 ├─► Human reviews Bill
 │
-├─► /hear "Bill name" Position-A vs Position-B
+├─► /judicial hear "Bill name" Position-A vs Position-B
 │     judicial-clerk ──► COURTROOM READY
 │     attorney-A + attorney-B argue in parallel
-│     (optional) /plot-evidence ──► generate requested evidence
+│     (optional) /plot evidence ──► generate requested evidence
 │     (optional) Justice asks clarifying questions
 │     Justice rules ──► prevailing position + physical basis
 │     Prevailing attorney writes to case_law.md
@@ -246,15 +246,15 @@ Change needed (algorithm, firmware, hardware, simulation)
 ```
 On demand ──► any of:
 
-  /code-review    ──► code-reviewer  ──► ARTICLE-I, FSM, filters, units
-  /doc-review     ──► doc-reviewer   ──► docs completeness, staleness, cross-refs
-  /gov-audit      ──► constitution-auditor ──► amendment conflicts, orphaned entries
+  /review code    ──► code-reviewer  ──► ARTICLE-I, FSM, filters, units
+  /review doc     ──► doc-reviewer   ──► docs completeness, staleness, cross-refs
+  /review gov     ──► constitution-auditor ──► amendment conflicts, orphaned entries
   /regression     ──► regression-runner ──► simulator-operator ──► plotter + uart-reader
-  /sw-advisor     ──► sw-advisor     ──► profile matrix analysis, algorithm suggestions
-  /hw-advisor     ──► hw-advisor     ──► BOM, pins, signal integrity, enclosure
+  /advisor sw     ──► sw-advisor     ──► profile matrix analysis, algorithm suggestions
+  /advisor hw     ──► hw-advisor     ──► BOM, pins, signal integrity, enclosure
   /compact        ──► stage-compactor or doc triage
-  /plot-profile   ──► plotter        ──► single profile diagnostic
-  /plot-evidence  ──► plotter        ──► hearing or validation evidence
+  /plot profile   ──► plotter        ──► single profile diagnostic
+  /plot evidence  ──► plotter        ──► hearing or validation evidence
 ```
 
 ---
@@ -270,11 +270,13 @@ Commands (human-invoked)          Agents (AI-executed)
                                   stage-compactor
                                   agent-updater (after Amendment ratification)
 
-/hear ────────────────────────►  judicial-clerk
+/judicial hear ───────────────►  judicial-clerk
                                   ├─► attorney-A
                                   ├─► attorney-B
                                   └─► (optional) plotter, simulator-operator
                                   agent-updater (after ruling)
+
+/judicial bill ───────────────►  bill-drafter
 
 /regression ──────────────────►  regression-runner
                                   └─► simulator-operator (per profile)
@@ -283,15 +285,14 @@ Commands (human-invoked)          Agents (AI-executed)
                                         ├─► compare_paths() if both available
                                         └─► plotter
 
-/plot-evidence ───────────────►  plotter
-/plot-profile ────────────────►  plotter
+/plot evidence ───────────────►  plotter
+/plot profile ────────────────►  plotter
 
-/code-review ─────────────────►  code-reviewer
-/doc-review ──────────────────►  doc-reviewer
-/gov-audit ───────────────────►  constitution-auditor
-/draft-bill ──────────────────►  bill-drafter
-/sw-advisor ──────────────────►  sw-advisor
-/hw-advisor ──────────────────►  hw-advisor
+/review code ─────────────────►  code-reviewer
+/review doc ──────────────────►  doc-reviewer
+/review gov ──────────────────►  constitution-auditor
+/advisor sw ──────────────────►  sw-advisor
+/advisor hw ──────────────────►  hw-advisor
 /compact ─────────────────────►  stage-compactor
 /toolchain ───────────────────►  (direct file writes — no agent)
 /spec ────────────────────────►  (direct file writes — no agent)
@@ -360,12 +361,12 @@ Agents are Claude subagents launched by slash commands. They do not make decisio
 | `/toolchain init` | Register hardware, FQBN, pins, libraries, UART format |
 | `/toolchain scaffold` | Generate `src/` modules after filling in UART format |
 | `/toolchain lock` | Stamp toolchain config as Stage 0 validated |
-| `/hear "<name>" A vs B` | Declare a judicial hearing when two rules conflict |
+| `/judicial hear "<name>" A vs B` | Declare a judicial hearing when two rules conflict |
 | `/regression [--signal-only\|--renode]` | Run full profile matrix; both paths if neither flag given |
-| `/hw-advisor` | Get design suggestions grounded in your test results |
-| `/sw-advisor` | Get algorithm suggestions grounded in simulation profiles |
-| `/plot-profile <profile>` | Generate a signal diagnostic plot |
-| `/plot-evidence <type>` | Collect evidence during a hearing or validation run |
+| `/advisor hw` | Get design suggestions grounded in your test results |
+| `/advisor sw` | Get algorithm suggestions grounded in simulation profiles |
+| `/plot profile <profile>` | Generate a signal diagnostic plot |
+| `/plot evidence <type>` | Collect evidence during a hearing or validation run |
 
 Agents read `docs/toolchain_config.md` before taking any toolchain-dependent action. A blocked toolchain produces a hard stop with the reason — the agent does not work around it.
 
