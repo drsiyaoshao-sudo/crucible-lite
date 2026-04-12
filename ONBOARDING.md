@@ -82,7 +82,17 @@ Know the answers to:
 
 Run `/toolchain init` to record these formally. The toolchain janitor will walk you through each field interactively.
 
-### D. A git repository
+### D. Activate git hooks (one command per clone)
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This activates the Article I pre-commit enforcement hook. It fires on every `git commit` — whether you wrote the code or an agent did. Any staged source file containing an empirical number, equation, or opaque setting without an Amendment 1 primitive citation will block the commit and show the offending lines.
+
+This applies to you as much as to agents. The constitution does not distinguish.
+
+### E. A git repository
 
 This framework uses git as the record of decisions. Every Bill enacted, every Amendment ratified, every case law ruling recorded — all of it is a commit. Without git history, you have no audit trail.
 

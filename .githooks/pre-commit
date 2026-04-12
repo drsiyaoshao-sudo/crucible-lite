@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Article I pre-commit enforcement.
+# Applies to every commit — agent or human engineer, no exceptions.
+# Blocks commits that introduce empirical values without Amendment 1 citations.
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+python3 "$REPO_ROOT/.claude/hooks/article1_check.py" --staged
