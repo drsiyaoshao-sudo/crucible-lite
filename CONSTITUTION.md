@@ -10,13 +10,13 @@ The four branches are: the **Legislature** (proposes changes), the **Judiciary**
 
 ---
 
-## Article I — Signal First
+## Article I — Physics First
 
-No parameter, threshold, gate, or algorithmic decision may be defined, proposed, or accepted unless it traces to a first-order physically measurable quantity in the device's domain.
+No parameter, threshold, gate, or algorithmic decision may be defined, proposed, or accepted unless it traces to a first-order physically measurable quantity in the device's domain and directly related to the purpose of the depolyed devices, i.e., porosity of a filter as the ultimate criterion to change the filters.
 
 **Adapting this for your device:**
 
-Before writing a single line of firmware, define your domain primitives — the two or three quantities that your device ultimately measures or responds to. Every threshold, every filter cutoff, every FSM transition must trace back to one of these.
+Before writing a single line of firmware, define your domain primitives — the two or three quantities that your device ultimately measures or responds to, and drives the decision making. Every threshold, every filter cutoff, every FSM transition must trace back to one of these.
 
 Examples:
 - Gait wearable → Cadence (steps/min), Step Length (m), Vertical Oscillation (cm)
