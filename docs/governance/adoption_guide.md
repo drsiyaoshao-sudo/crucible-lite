@@ -180,7 +180,7 @@ The most common failure. Engineers want to get to the firmware. The primitives f
 `toolchain_config.md` is not documentation — it is a gatekeeper. Every agent reads it before acting. If it is incomplete, agents will stop and ask you to fill it in. Fill it in before Stage 0.
 
 **Ratifying too many Amendments at once.**  
-The GaitSense project accumulated 17 Amendments over months of development. You do not need 17 Amendments before you start. You need four. The rest emerge from real problems encountered during development. An Amendment written speculatively without a failure mode it addresses is likely wrong.
+The GaitSense project accumulated 17 Amendments 21 days of development. You do not need 17 Amendments before you start. You need four. The rest emerge from real problems encountered during development. An Amendment written speculatively without a failure mode it addresses is likely wrong.
 
 ---
 
