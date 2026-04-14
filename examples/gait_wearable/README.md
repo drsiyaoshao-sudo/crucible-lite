@@ -42,7 +42,7 @@ The Symmetry Index (SI) traces to cadence and step length differences between le
 
 ## Where to find the reference implementation
 
-The full codebase is at: `github.com/[org]/gait_device`
+The full codebase is at: `github.com/drsiyaoshao-sudo/gait_device`
 
 Key files for framework adopters:
 - `CLAUDE.md` — the device-specific Constitution (17 Amendments, full case law)
