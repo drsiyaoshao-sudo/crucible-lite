@@ -28,9 +28,9 @@ Crucible addresses all five with a single mechanism: **every change that touches
 
 Everything in Crucible derives from two unconditional rules:
 
-### Article I — Signal First
+### Article I — Physics First
 
-No parameter, threshold, gate, or algorithm decision may be defined unless it traces to a first-order physically measurable quantity specific to your device's domain.
+No parameter, threshold, gate, or algorithm decision may be defined unless it traces to a first-order physically measurable quantity dictates the system charateristics of your device trying to measure or use in the host functions, e.g., a flow rate meter can infer the porosity of a filter.
 
 *For a gait wearable:* all parameters trace to cadence, step length, or vertical oscillation.  
 *For a thermostat:* all parameters trace to thermal mass, heat transfer coefficient, or occupancy signal.  
