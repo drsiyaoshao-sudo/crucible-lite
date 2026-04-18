@@ -12,7 +12,7 @@ The four branches are: the **Legislature** (proposes changes), the **Judiciary**
 
 ## Article I — Physics First
 
-No parameter, threshold, gate, or algorithmic decision may be defined, proposed, or accepted unless it traces to a first-order physically measurable quantity in the device's domain and directly related to the purpose of the depolyed devices, i.e., porosity of a filter as the ultimate criterion to change the filters. 
+No parameter, threshold, gate, or algorithmic decision may be defined, proposed, or accepted unless it traces to a first-order physically measurable quantity in the device's domain and directly related to the purpose of the deployed devices, i.e., porosity of a filter as the ultimate criterion to change the filters. 
 
 **Adapting this for your device:**
 

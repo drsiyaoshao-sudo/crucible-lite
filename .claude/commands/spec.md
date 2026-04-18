@@ -97,7 +97,7 @@ Rules for primitive extraction:
 - It is NOT a sensor reading — it is what the sensor reading is *evidence of*
 - There are usually 2–3 primitives; more than 4 is a sign the scope is too broad
 - Every signal collected in Step 2 must trace to at least one primitive
-- It should be a flag if chain of derivation from signal to physics primitive has more than two intermediate physical quantities; if chain of derivation is longer than two intermediate steps, the derivation will be noisy and complex; the agent shall suggest human engineer with alternative signal or sensors for the project
+- Flag any signal whose derivation from a domain primitive passes through more than one intermediate physical quantity. Beyond one intermediate step, the physical link becomes untraceable and the primitive citation cannot be verified — an Article I violation risk. Recommend the human engineer identify a more direct sensor or redefine the primitive.
 
 Present the extracted primitives to the human and ask for confirmation:
 
