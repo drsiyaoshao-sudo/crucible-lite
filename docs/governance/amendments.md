@@ -1,6 +1,6 @@
 # Crucible Amendments
 
-All amendments derive from Article I (Signal First) and/or Article II (Human in the Loop)
+All amendments derive from Article I (Physics First) and/or Article II (Human in the Loop)
 in CONSTITUTION.md. The governing Articles are unconditional and cannot be amended.
 
 Amendment 1 is always the Domain Primitives amendment — written by `/spec collect` for
@@ -234,6 +234,80 @@ discipline as firmware build tools).
 
 ---
 
+### Amendment 12 — Corpus Supremacy
+*Traces to: Article I + Article II*
+*Status: PROPOSED — ratify by removing this line*
+
+The corpus is the alignment target of the project. It is the authoritative record
+of what the device must do, why, and against which physical reality it is measured.
+All code is an approximation of the corpus. When code and corpus conflict, the
+corpus is correct and the code is wrong.
+
+**The corpus is not documentation. It is the product.** The physical device's
+behaviour is defined by the corpus. Code is one instantiation of that behaviour,
+generated from the corpus, and replaceable by regeneration.
+
+#### The four corpus layers
+
+| Layer | Contents | Change requirement |
+|-------|----------|--------------------|
+| **1 — Immutable corpus** | Signal inventory (`device_context.md`), domain primitives (Amendment 1), toolchain record (`toolchain_config.md`), `CONSTITUTION.md` | Amendment Ratification + Judicial Hearing |
+| **2 — Interface implementations** | `src/signals.py`, `src/algorithm.py` | Judicial Hearing — `api-reviewer` must produce a derivation chain evidence report before the Hearing is declared |
+| **3 — Generated artifacts** | Firmware source, Renode simulation config | Bill enacted through the Legislative Process |
+| **4 — Ephemeral artifacts** | Test scripts, `src/analysis.py`, `src/plot.py`, `src/events.py` | None — delete and regenerate freely from the current corpus state |
+
+#### Corpus Supremacy rule
+
+No generated artifact (Layer 3 or 4) may be manually edited to produce a result
+that the corpus does not authorize. If a generated artifact is wrong, the correct
+path is:
+
+  1. Identify which corpus layer contains the error
+  2. Change the corpus through the required process for that layer
+  3. Regenerate the artifact from the updated corpus
+
+Editing a generated artifact directly to work around a corpus gap is an
+**Article II violation** — it is a decision about physical or algorithmic direction
+made without human approval of the underlying corpus change.
+
+#### Regeneration is a Standing Order
+
+Deleting and regenerating any Layer 3 or Layer 4 artifact from an **unchanged**
+corpus requires no Bill, no Hearing, and no human approval. It is a pre-authorized
+Bureaucracy operation. Regeneration that is triggered by a corpus change is covered
+by whatever process authorized that corpus change.
+
+#### Layer 2 swap requires a Hearing
+
+`signals.py` and `algorithm.py` sit at the interface between the physical world
+and the toolchain. A new implementation may nominally satisfy the Layer 1 interface
+contract (correct units, correct output names) while introducing a derivation chain
+that violates Article I — the physical link from domain primitive to output passes
+through more than one intermediate physical quantity, making the primitive citation
+unverifiable.
+
+Before any Layer 2 Hearing is declared, `api-reviewer` must audit the proposed
+implementation and produce a derivation chain evidence report. The attorneys argue
+from that report. The Justice rules on Article I compliance before the swap is
+authorized.
+
+**Rationale:** The corpus is the mechanism by which the project remains aligned to
+both physical reality (Article I) and human purpose (Article II). Code that drifts
+from the corpus has drifted from both simultaneously. Regenerating from corpus is
+not a build step — it is a realignment operation. The layer hierarchy makes the
+alignment target explicit and the distance from ground truth measurable.
+
+**What happens without it:** An agent hand-patches generated firmware to fix a
+threshold that should have been changed in `algorithm.py`. The corpus and the code
+diverge silently. The next regeneration overwrites the patch. No one knows why the
+field behaviour changed. There is no corpus record to audit against.
+
+**Amendment it complements:** Amendment 11 (Scaffold Immutability — Layer 4
+ephemerality applies to scaffold outputs; Amendment 11 governs the specific
+conditions under which they are regenerated).
+
+---
+
 ## Project-Specific Amendments
 
 Amendment 1 (Domain Primitives) is written here by `/spec collect` after human
@@ -259,3 +333,4 @@ as the project evolves.
 | 9 | Hardware Optimization Transparency | PROPOSED | Article II |
 | 10 | Interim Results and Decision Logging | PROPOSED | Article II |
 | 11 | Scaffold Immutability | PROPOSED | Article I + II |
+| 12 | Corpus Supremacy | PROPOSED | Article I + II |
