@@ -67,7 +67,7 @@ hard stop.
 
 ---
 
-## The agent roster (17 agents)
+## The agent roster (18 agents)
 
 ### Judicial Branch
 | Agent | Role |
@@ -95,7 +95,8 @@ hard stop.
 ### Bureaucracy — Housekeeping
 | Agent | Role |
 |---|---|
-| `code-reviewer` | Article I traceability, FSM integrity, filter chain, unit checks |
+| `api-reviewer` | Pre-Hearing evidence: derivation chain depth and interface contract alignment for signals.py and algorithm.py |
+| `code-reviewer` | Article I traceability, FSM integrity, filter chain, unit checks in src/ during development |
 | `doc-reviewer` | Documentation completeness, staleness, cross-doc consistency |
 | `constitution-auditor` | Governance record consistency (amendments vs case law) |
 | `package-manager` | Python/brew/pio dependency management |
