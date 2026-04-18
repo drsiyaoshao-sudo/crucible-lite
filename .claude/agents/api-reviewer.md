@@ -72,6 +72,11 @@ For each output quantity, trace the derivation from raw input to physical output
 - Chain length 1 (one intermediate): raw input → one physical intermediate → output. CLEAN.
 - Chain length 2+: raw input → two or more physical intermediates → output. FLAG as **CHAIN-VIOLATION**.
 
+The one-intermediate-step limit enforces three properties simultaneously:
+1. **Article I traceability** — the primitive citation remains verifiable at the output
+2. **Causation over correlation** — each additional intermediate is a potential confound that may correlate with the primitive in the training population but not causally link to it across conditions; this is the mechanism by which long-chain signals produce models that fail on population or terrain change
+3. **Hallucination prevention** — longer chains give an agent room to insert plausible-sounding intermediates that are not actually measured, anchoring algorithmic decisions in fiction rather than physics
+
 Example — CLEAN (length 1):
   pixel intensity → binary contact event → cadence (steps/min)
   Raw: pixel | Intermediate: contact event | Output: cadence ✓
