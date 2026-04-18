@@ -1,0 +1,54 @@
+name: Constitutional Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  constitution:
+    name: Crucible Constitution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history needed for diff and case_law audit
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine base ref
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ref=origin/${{ github.base_ref }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=HEAD~1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run constitutional checks
+        run: |
+          python -m crucible.checks.runner --base-ref ${{ steps.base.outputs.ref }}
+
+      - name: Post summary on failure
+        if: failure()
+        run: |
+          echo "## Constitutional Check Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "One or more constitutional violations were detected." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Resolution paths:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Article I violation: add \`// Traces to: [primitive]\` inline citation" >> $GITHUB_STEP_SUMMARY
+          echo "- Amendment 12 Layer 2 violation: run \`/judicial hear\` before swapping signals.py or algorithm.py" >> $GITHUB_STEP_SUMMARY
+          echo "- Amendment 12 Layer 4 violation: change the corpus first, then regenerate the artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- Amendment 2 stage gate violation: run \`stage-compactor\` agent to close the stage properly" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For a full audit, invoke the police agent in your Crucible session." >> $GITHUB_STEP_SUMMARY
