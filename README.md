@@ -110,6 +110,8 @@ Crucible brings: the governance structure, the agent workflow, the feedback loop
 
 **Reference implementation:** [crucible-comfort](https://github.com/rturcottetardif/crucible-comfort) is a complete implementation of Crucible on a real device — thermal comfort wearable on nRF52840 + BLE. All stages are documented with real results. See [examples/crucible_comfort/](examples/crucible_comfort/README.md) for a guided tour of what to look at first.
 
+Crucible-Comfort demonstrates the governance architecture transferring from GaitSense (biomechanics) to HVAC thermodynamics without modification. The constitutional hooks enforce Physics First on thermodynamic parameters — every threshold traces to thermal mass, heat transfer coefficient, or occupancy signal. This is the cleanest implementation of the constitutional structure, built without the trial and error of the first domain.
+
 ---
 
 ## The Name
