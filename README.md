@@ -108,7 +108,7 @@ Crucible brings: the governance structure, the agent workflow, the feedback loop
 4. Run `/session 0` — HIL toolchain lock for your dev kit
 5. File your first Bill when you want to change anything
 
-**Reference implementation:** The GaitSense ankle wearable project at `github.com/[org]/gait_device` is a complete implementation of Crucible on a real device — nRF52840 + LSM6DS3TR-C IMU + BLE. All five stages are documented with real results, including the bugs that were caught and why the governance structure caught them when conventional testing would not have.
+**Reference implementation:** The HVAC sensor project at `[https://github.com/rturcottetardif/crucible-comfort]` is a live implementation of Crucible on a real device — nRF52840 + LSM6DS3TR-C IMU + BLE. 
 
 ---
 
