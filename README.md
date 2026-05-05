@@ -1,4 +1,4 @@
-# Crucible-Lite — Hardware CI/CD Framework for embbeded design
+# Crucible-Lite — Hardware CI/CD Framework for Embedded Design
 
 **Crucible-Lite** is an agent-assisted framework for bringing CI/CD discipline to hardware product development. It is designed for **system integrators** — engineers who design circuits, choose sensors, write firmware, and need a structured, repeatable path from algorithm idea to deployed device.
 
@@ -108,7 +108,7 @@ Crucible brings: the governance structure, the agent workflow, the feedback loop
 4. Run `/session 0` — HIL toolchain lock for your dev kit
 5. File your first Bill when you want to change anything
 
-**Reference implementation:** The GaitSense ankle wearable project at `github.com/[org]/gait_device` is a complete implementation of Crucible on a real device — nRF52840 + LSM6DS3TR-C IMU + BLE. All five stages are documented with real results, including the bugs that were caught and why the governance structure caught them when conventional testing would not have.
+**Reference implementation:** [crucible-comfort](https://github.com/rturcottetardif/crucible-comfort) is a complete implementation of Crucible on a real device — thermal comfort wearable on nRF52840 + BLE. All stages are documented with real results. See [examples/crucible_comfort/](examples/crucible_comfort/README.md) for a guided tour of what to look at first.
 
 ---
 
