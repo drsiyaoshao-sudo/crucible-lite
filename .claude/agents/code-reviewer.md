@@ -41,12 +41,16 @@ Print: "Amendment 1 not ratified. Run /spec collect first."
 
 Read in this order. Do not begin review until all reads complete.
 
-1. `docs/governance/amendments.md`
+If the Chroma index exists (`.chroma/` in repo root), use `crucible.rag.query` to retrieve
+relevant corpus sections rather than reading full files — it reduces context load and scopes
+results to the pertinent primitives and thresholds. Fall back to full-file reads if unavailable.
+
+1. `docs/governance/amendments.md` (or `query("amendment 1 primitives calibration", file_filter="amendments")`)
    - Extract Amendment 1 domain primitives (names, units) — these are your Article I checklist
    - Note any calibration or algorithm amendments (Amendment 7 and above)
    - Check Amendment 11 ratification status (governs src/ audit scope)
    - Check Amendment 12 ratification status (governs scope boundary enforcement)
-2. `docs/device_context.md`
+2. `docs/device_context.md` (or `query("signal inventory operating envelope", file_filter="device_context")`)
    - Signal Inventory: expected units, normal range, hard limits per signal
    - Operating Envelope: confirms the signal conditions the code must handle
 3. `docs/toolchain_config.md`

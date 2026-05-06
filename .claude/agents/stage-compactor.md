@@ -22,7 +22,11 @@ When invoked with a stage number (e.g. "Stage 3 is closed"), you:
 4. Write all cards to `docs/governance/stage_[N]_closeout.md`
 5. Mark each compacted entry in `docs/governance/case_law.md` as
    `[FROZEN — Stage N closed YYYY-MM-DD]`
-6. Commit both files with a standard closeout commit message:
+6. If `corpus.db` exists (at repo root), write each compacted case to the `cases` table:
+   - `type = 'closeout'`, `stage = N`, `status = 'frozen'`, `summary = <card text>`
+   - Run: `python -m crucible.db.migrate` first if schema not yet applied
+   - If DB is unavailable, skip silently — markdown files are the authoritative record
+7. Commit with a standard closeout commit message:
    `git add docs/governance/case_law.md docs/governance/stage_[N]_closeout.md`
    `git commit -m "chore: close Stage [N] — compact case law, freeze precedents"`
    Do NOT push. Push is a human action. Print the commit hash and stop.

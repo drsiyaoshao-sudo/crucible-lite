@@ -31,7 +31,10 @@ A Judicial Hearing will argue from your report. Be precise, be complete, be neut
 In this order:
 
 1. `docs/device_context.md` — Signal Inventory table (Layer 1 contract for signals.py)
+   Prefer `crucible.rag.query("signal inventory", file_filter="device_context")` if Chroma
+   index is available (`.chroma/` in repo root).
 2. `docs/governance/amendments.md` — Amendment 1 domain primitives (Layer 1 contract for algorithm.py)
+   Prefer `crucible.rag.query("domain primitives amendment 1", file_filter="amendments")` if available.
 3. `docs/toolchain_config.md` — active toolchain, expected algorithm output format
 4. `src/signals.py` — the implementation under review
 5. `src/algorithm.py` — the implementation under review
