@@ -5,6 +5,7 @@ Run this before /toolchain init and before /session 0. It is the first act of ev
 Usage: /spec [subcommand]
 
 Subcommands:
+  fast      — one-shot intake: paste everything you know, get full corpus draft in one pass
   collect   — full interactive interview (default if no subcommand)
   review    — read current docs/device_context.md and flag any gaps
   signals   — add or update signal inventory only (no full interview)
@@ -243,6 +244,59 @@ Next steps:
 
 ---
 
+## Subcommand: /spec fast
+
+For engineers who already know their design. Accepts a free-form dump and produces a
+full corpus draft in one pass — no sequential questions.
+
+**Step 1 — Single intake prompt**
+
+Print exactly this, then wait for the human's response:
+
+```
+Describe your device. Paste in everything you know — BOM, sensor list, what it does,
+any thresholds you have in mind, the operating environment, failure modes, even rough
+notes. The more you give me, the less I infer.
+```
+
+**Step 2 — Extract full corpus in one pass**
+
+From the dump, extract without asking follow-up questions (unless a field is
+*completely absent* — missing device purpose or missing all sensors blocks extraction):
+
+- **Device purpose statement** — what it does, who depends on it, hardest scenario, failure modes
+- **Pass/fail threshold** — quantitative if given; mark `[TBD — confirm]` if not
+- **Signal inventory** — for each sensor: name, physical quantity, unit, expected range,
+  hard limits (mark `[INFERRED — confirm]` for any field that required guessing)
+- **Domain primitives** — max 3; flag if more seem needed; derive from signals + purpose
+- **Operating envelope** — normal conditions, worst-case, out-of-scope
+
+**Step 3 — Present full draft for one confirmation pass**
+
+Present the output as the *actual file content* that will be written — not a summary.
+Show the complete `device_context.md` Device Purpose + Signal Inventory blocks and the
+Amendment 1 draft, formatted exactly as Steps 5–6 of `/spec collect` would produce.
+
+Mark every inferred field with `[INFERRED — confirm]` inline.
+
+Ask: "Is this correct? Tell me what to change. One round of revisions, then I'll write it."
+
+**Step 4 — One revision round, then write**
+
+Accept one block of corrections. Apply them. Do not iterate further — if more corrections
+are needed, tell the human to run `/spec review` after writing.
+
+Write to `docs/device_context.md` and draft Amendment 1 exactly as Steps 5–6 of
+`/spec collect` specify.
+
+Any field still marked `[INFERRED — confirm]` after revision is written as-is with the
+tag retained. Session initialization (Step 0a) will flag these for human confirmation
+before Stage 0 runs — it will not hard-stop on them.
+
+**Step 5 — Print readiness summary** (same format as `/spec collect` Step 7)
+
+---
+
 ## Subcommand: /spec review
 
 Read `docs/device_context.md` and check for gaps. Flag:
@@ -275,3 +329,4 @@ Do not re-interview on primitives or signals unless the human says the target ch
 requires primitive changes (which would require Amendment revision).
 
 Now parse "$ARGUMENTS" and run the matching subcommand, defaulting to `collect` if empty.
+Valid subcommands: `fast`, `collect`, `review`, `signals`, `target`.

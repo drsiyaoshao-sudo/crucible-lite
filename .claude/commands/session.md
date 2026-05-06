@@ -35,11 +35,20 @@ Article II irreversibility does not apply to Stage 0 — counter flashing is tri
 
 **Step 0a — Spec check:**
 Read `docs/device_context.md`. Check Device Purpose and Signal Inventory sections.
-If either section is a placeholder (contains "> [" template text) or missing: stop and print:
-  "Device spec not collected. Run /spec collect before starting any stage.
-   The spec establishes the project target and domain primitives that all
-   other agents use as their evidence base."
-If populated, print one-line summary:
+
+Placeholder detection: a section is incomplete if it contains "> [", "TODO", "TBD",
+"[describe", "[INFERRED — confirm]", or is missing entirely.
+
+If Device Purpose or Signal Inventory is incomplete:
+  - Identify which specific field is still a placeholder (Device Purpose, Project Target,
+    Pass/Fail Threshold, Signal Inventory, Domain Primitives, Operating Envelope).
+  - Stop and print:
+    "Spec incomplete — [field name] still placeholder.
+     Run /spec fast (quick) or /spec collect (guided) to fill it in."
+  - If fields are marked `[INFERRED — confirm]`: do NOT stop. Instead print each flagged
+    field and ask "Confirm: [field value]? [yes/correct it]" before proceeding.
+
+If populated (including after INFERRED fields are confirmed), print one-line summary:
   "Project target: [project target line from device_context.md]"
   "Pass/fail threshold: [threshold line from device_context.md]"
 
@@ -58,9 +67,18 @@ Print active toolchain summary: board, FQBN, flash method, wireless transport.
 If any blocked toolchain appears in the active slot: stop and report the conflict.
 
 **Step 0c — Domain primitives check:**
-Read the project's Amendment 1 (Domain Primitives). Print them. If not yet ratified:
-  "Domain primitives not ratified. Run /spec collect — it drafts Amendment 1
-   and walks you through ratification."
+Read the project's Amendment 1 (Domain Primitives) from `docs/governance/amendments.md`.
+Print them if present.
+
+If Amendment 1 is absent entirely:
+  "Amendment 1 absent — domain primitives have not been defined.
+   Run /spec fast or /spec collect to generate and ratify them."
+
+If Amendment 1 is present but still marked PROPOSED:
+  "Amendment 1 present but not yet ratified.
+   Read the primitives above and confirm they are correct, then run:
+   /governance ratify 1
+   (or manually remove the PROPOSED line from docs/governance/amendments.md)"
 
 **Step 0d — Police check:**
 Invoke `police` agent to audit the last 10 commits and the current session for
@@ -112,15 +130,17 @@ Print session header:
     Wireless: [active_toolchain.wireless_receiver]
 
   Commands:
-    /spec [collect|review|signals|target]  — device spec and domain primitives
-    /session [stage]                       — this orchestrator
-    /toolchain <subcommand>                — toolchain janitor
-    /hear "<name>" A vs B                  — judicial hearing
-    /hw-advisor                            — hardware design suggestions from test results
-    /sw-advisor [focus]                    — algorithm design suggestions from signal profiles
-    /plot-evidence <type>                  — evidence collection
-    /plot-profile <profile>                — signal diagnostic plot
-    /compact [target]                      — compact spiralling documentation
+    /spec [fast|collect|review|signals|target]  — device spec and domain primitives
+    /session [stage]                            — this orchestrator
+    /toolchain <subcommand>                     — toolchain janitor
+    /judicial hear "<name>" A vs B             — judicial hearing
+    /judicial bill <description>               — produce a Bill from evidence
+    /governance ratify [1|2|3|4|all]           — ratify amendments interactively
+    /advisor hw                                — hardware design suggestions from test results
+    /advisor sw [focus]                        — algorithm design suggestions from signal profiles
+    /plot evidence <type>                      — evidence collection
+    /plot profile <name>                       — signal diagnostic plot
+    /compact [target]                          — compact spiralling documentation
 
   Housekeeping (run any time, no stage gate required):
     code-reviewer agent                    — Article I compliance, FSM integrity, unit checks
