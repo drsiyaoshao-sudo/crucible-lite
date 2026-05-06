@@ -236,7 +236,6 @@ discipline as firmware build tools).
 
 ### Amendment 12 — Corpus Supremacy
 *Traces to: Article I + Article II*
-*Status: PROPOSED — ratify by removing this line*
 
 The corpus is the alignment target of the project. It is the authoritative record
 of what the device must do, why, and against which physical reality it is measured.
@@ -333,4 +332,4 @@ as the project evolves.
 | 9 | Hardware Optimization Transparency | PROPOSED | Article II |
 | 10 | Interim Results and Decision Logging | PROPOSED | Article II |
 | 11 | Scaffold Immutability | PROPOSED | Article I + II |
-| 12 | Corpus Supremacy | PROPOSED | Article I + II |
+| 12 | Corpus Supremacy | RATIFIED | Article I + II |
