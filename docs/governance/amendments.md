@@ -307,6 +307,44 @@ conditions under which they are regenerated).
 
 ---
 
+### Amendment 13 — Hybrid Execution Tiers
+
+**Status:** PROPOSED  
+**Traces to:** Article I (data provenance), Article II (human controls where sensitive data flows)
+
+**What it mandates:**
+
+Every Crucible agent operates under a three-tier corpus sensitivity classification:
+
+| Tier | Meaning | Permitted execution sites |
+|---|---|---|
+| PRIVATE | Project IP, raw sensor data, field recordings, algorithm source | Local only (Ollama or direct Python) |
+| DERIVED-OK | Scalar summaries, plot files, metric tables derived from PRIVATE | Local or cloud |
+| PUBLIC | Governance docs, agent definitions, constitutional records | Local or cloud, unrestricted |
+
+**Rules:**
+
+1. An agent whose `contract.execution` is `cloud` must not retrieve PRIVATE corpus entries and must not receive PRIVATE content in any prompt.
+2. PRIVATE content may only flow to local execution contexts — it must not appear in any payload forwarded to a cloud API.
+3. Every agent must carry a `contract:` block in its YAML frontmatter declaring its execution site, permitted retrieves, and forwarding rules. An agent without a `contract:` block may not call `query_tiered()`.
+4. The RAG router (`crucible/hybrid/router.py`) enforces retrieval boundaries automatically by reading the `contract.retrieves` field — no agent may self-select access beyond its contract.
+5. When field data is present (Stage 3+), all files under `docs/field-test/` are classified PRIVATE by default. Reclassifying any PRIVATE entry to a less-restrictive tier requires a Bill.
+6. The corpus tier index lives at `docs/hybrid/corpus_index.json` and is updated as a Bureaucracy Standing Order — no Bill required to add PRIVATE entries, because restricting access is always safe.
+
+**Relationship to Amendment 12 (Corpus Supremacy):**
+
+The corpus layers (1–4) govern mutability and change gates. The hybrid tiers (PRIVATE / DERIVED-OK / PUBLIC) govern sensitivity and execution routing. The two systems are orthogonal — a Layer 1 file can be PUBLIC (CONSTITUTION.md) or PRIVATE (src/signals.py once a project spec is defined). Both classifications apply simultaneously.
+
+**Enforcement mechanism:**
+
+`crucible/hybrid/router.py` — reads `contract.retrieves` from agent frontmatter, filters `corpus_index.json` by permitted tiers, and returns only allowed chunks. `crucible/rag/query.py::query_tiered()` wraps the semantic search with router enforcement.
+
+**Why this matters:**
+
+As crucible-lite deploys on real devices with real field data, cloud agents (attorneys, sw-advisor) will receive session context. Without explicit tier boundaries, a cloud API call could receive raw sensor arrays or algorithm source. This amendment makes the boundary constitutionally explicit and mechanically enforced.
+
+---
+
 ## Project-Specific Amendments
 
 Amendment 1 (Domain Primitives) is written here by `/spec collect` after human
@@ -333,3 +371,4 @@ as the project evolves.
 | 10 | Interim Results and Decision Logging | PROPOSED | Article II |
 | 11 | Scaffold Immutability | PROPOSED | Article I + II |
 | 12 | Corpus Supremacy | RATIFIED | Article I + II |
+| 13 | Hybrid Execution Tiers | PROPOSED | Article I + II |

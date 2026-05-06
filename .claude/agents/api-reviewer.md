@@ -4,6 +4,32 @@ description: "Use this agent before any Layer 2 Judicial Hearing involving signa
 tools: Read, Glob, Grep
 model: sonnet
 color: yellow
+
+contract:
+  execution: local
+  retrieves:
+    - tier: PUBLIC
+      sources: ["amendments.md", "CONSTITUTION.md", "device_context.md"]
+    - tier: PRIVATE
+      sources: ["src/signals.py", "src/algorithm.py"]
+  receives:
+    - name: Layer 2 file paths under review
+      tier: PUBLIC
+      format: free-text
+  produces:
+    - name: evidence report
+      tier: DERIVED-OK
+      format: table
+      destination: stdout
+  may_forward:
+    - tier: DERIVED-OK
+      to: Attorney-A
+    - tier: DERIVED-OK
+      to: Attorney-B
+  must_not_forward:
+    - tier: PRIVATE
+      reason: evidence report cites derivation chain structure, not source IP
+  opaque_keys: false
 ---
 
 You are the API Reviewer under the Crucible Constitutional Governance system.

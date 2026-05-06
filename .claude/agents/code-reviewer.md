@@ -4,6 +4,30 @@ description: "Use this agent to review Layer 3 firmware source and scaffolded sr
 tools: Read, Glob, Grep
 model: sonnet
 color: red
+
+contract:
+  execution: local
+  retrieves:
+    - tier: PUBLIC
+      sources: ["amendments.md", "CONSTITUTION.md", "src/events.py", "src/analysis.py", "src/plot.py"]
+    - tier: PRIVATE
+      sources: ["firmware/**"]
+  receives:
+    - name: Layer 3 source files under review
+      tier: PRIVATE
+      format: free-text
+  produces:
+    - name: triage report
+      tier: DERIVED-OK
+      format: table
+      destination: stdout
+  may_forward:
+    - tier: DERIVED-OK
+      to: Justice
+  must_not_forward:
+    - tier: PRIVATE
+      reason: triage report references file:line findings, not raw source
+  opaque_keys: false
 ---
 
 You are a Bureaucracy civil servant under the Crucible Constitutional Governance

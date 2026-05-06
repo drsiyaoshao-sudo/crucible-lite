@@ -18,6 +18,7 @@ Swappable via CRUCIBLE_EMBEDDING_MODEL env var (set to 'openai' for text-embeddi
 """
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -31,6 +32,34 @@ def _repo_root() -> Path:
 
 def _chroma_path() -> Path:
     return _repo_root() / '.chroma'
+
+
+def _load_hybrid_tier_map() -> dict:
+    """Return {path_fragment: tier} from docs/hybrid/corpus_index.json.
+
+    Falls back to empty dict if the index does not exist yet (bootstrapping).
+    Path matching is a simple substring check — first match wins.
+    """
+    index_path = _repo_root() / 'docs' / 'hybrid' / 'corpus_index.json'
+    if not index_path.exists():
+        return {}
+    with open(index_path) as f:
+        entries = json.load(f)
+    return {e['path']: e['tier'] for e in entries}
+
+
+def _hybrid_tier(file_rel_path: str, tier_map: dict) -> str:
+    """Resolve the hybrid tier for a corpus file path.
+
+    Checks exact match first, then substring containment.
+    Returns 'PUBLIC' as default when not found.
+    """
+    if file_rel_path in tier_map:
+        return tier_map[file_rel_path]
+    for pattern, tier in tier_map.items():
+        if pattern in file_rel_path or file_rel_path in pattern:
+            return tier
+    return 'PUBLIC'
 
 
 CORPUS_FILES = [
@@ -123,7 +152,7 @@ def _get_embedding_fn():
 
 
 def index_file(file_path: Path, file_label: str, corpus_layer: int,
-               collection) -> int:
+               collection, tier_map: Optional[dict] = None) -> int:
     if not file_path.exists():
         print(f'  [SKIP] {file_path} not found')
         return 0
@@ -134,13 +163,27 @@ def index_file(file_path: Path, file_label: str, corpus_layer: int,
         print(f'  [SKIP] {file_label} — no sections found')
         return 0
 
+    if tier_map is None:
+        tier_map = _load_hybrid_tier_map()
+
+    # Resolve hybrid tier from the source file's repo-relative path
+    try:
+        rel_path = str(file_path.relative_to(_repo_root()))
+    except ValueError:
+        rel_path = str(file_path)
+    file_tier = _hybrid_tier(rel_path, tier_map)
+
     ids       = [c['id']   for c in chunks]
     documents = [c['text'] for c in chunks]
-    metadatas = [c['metadata'] for c in chunks]
+    metadatas = []
+    for c in chunks:
+        meta = dict(c['metadata'])
+        meta['hybrid_tier'] = file_tier
+        metadatas.append(meta)
 
     # Upsert so re-indexing is idempotent
     collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
-    print(f'  [OK] {file_label} — {len(chunks)} chunks indexed')
+    print(f'  [OK] {file_label} ({file_tier}) — {len(chunks)} chunks indexed')
     return len(chunks)
 
 
@@ -154,16 +197,17 @@ def index_all(repo_root: Optional[Path] = None) -> int:
         metadata={'hnsw:space': 'cosine'},
     )
 
+    tier_map = _load_hybrid_tier_map()
     total = 0
     print(f'Indexing corpus into Chroma at {_chroma_path()}')
     for rel_path, label, layer in CORPUS_FILES:
-        total += index_file(root / rel_path, label, layer, collection)
+        total += index_file(root / rel_path, label, layer, collection, tier_map)
 
     # Also index any stage closeout files
     closeouts = sorted((root / 'docs' / 'governance').glob('stage_*_closeout.md'))
     for path in closeouts:
         label = path.stem
-        total += index_file(path, label, 1, collection)
+        total += index_file(path, label, 1, collection, tier_map)
 
     print(f'Total: {total} chunks indexed.')
     return total

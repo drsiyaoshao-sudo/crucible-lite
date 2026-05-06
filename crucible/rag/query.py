@@ -2,14 +2,18 @@
 Semantic query interface for agents.
 
 Usage (from agent code or commands):
-  from crucible.rag.query import query
+  from crucible.rag.query import query, query_tiered
 
   results = query("what primitive governs cadence thresholds", n=3)
   for r in results:
       print(r['section'], r['score'])
       print(r['text'][:200])
 
-Returns a list of {id, section, file, layer, text, score} dicts,
+  # Tier-enforced query — filters by agent contract (Amendment 13)
+  results = query_tiered("attorney-A", "signals algorithm", n=3)
+  # → no PRIVATE chunks returned for cloud agents
+
+Returns a list of {id, section, file, layer, hybrid_tier, text, score} dicts,
 sorted by relevance (highest score first).
 
 Falls back to grep-style keyword search if Chroma is not installed or
@@ -88,15 +92,51 @@ def _chroma_query(question: str, n: int, layer: Optional[int],
         meta = results['metadatas'][0][i]
         dist = results['distances'][0][i]
         out.append({
-            'id':      doc_id,
-            'section': meta.get('section', ''),
-            'file':    meta.get('file', ''),
-            'layer':   meta.get('layer', 1),
-            'text':    results['documents'][0][i],
-            'score':   round(1.0 - dist, 4),   # cosine similarity
+            'id':         doc_id,
+            'section':    meta.get('section', ''),
+            'file':       meta.get('file', ''),
+            'layer':      meta.get('layer', 1),
+            'hybrid_tier': meta.get('hybrid_tier', 'PUBLIC'),
+            'text':       results['documents'][0][i],
+            'score':      round(1.0 - dist, 4),   # cosine similarity
         })
 
     return sorted(out, key=lambda x: x['score'], reverse=True)
+
+
+def query_tiered(agent_name: str, question: str, n: int = 5,
+                 file_filter: Optional[str] = None) -> list[dict]:
+    """
+    Tier-enforced semantic search (Amendment 13).
+
+    Wraps query() and post-filters results to corpus chunks the named agent
+    is contractually permitted to retrieve. Falls back to unfiltered query()
+    if the router or corpus_index is unavailable.
+
+    Args:
+        agent_name:  Name of the agent (must match .claude/agents/<name>.md)
+        question:    Natural language query
+        n:           Number of results to return
+        file_filter: Restrict to a specific file label (e.g. 'amendments')
+
+    Returns list of dicts: {id, section, file, layer, hybrid_tier, text, score}
+    All returned chunks are within the agent's permitted tier set.
+    """
+    try:
+        from crucible.hybrid.router import load_contract_tiers
+        permitted_tiers = set(load_contract_tiers(agent_name))
+    except Exception:
+        # Router unavailable (no corpus_index.json, no contract block) — degrade gracefully
+        return query(question, n=n, file_filter=file_filter)
+
+    # Fetch more than n to have enough after tier filtering
+    raw = query(question, n=n * 4, file_filter=file_filter)
+
+    filtered = [
+        r for r in raw
+        if r.get('hybrid_tier', 'PUBLIC') in permitted_tiers
+    ]
+    return filtered[:n]
 
 
 def _fallback_grep(question: str, n: int) -> list[dict]:

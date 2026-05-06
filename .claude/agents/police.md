@@ -4,6 +4,30 @@ description: "Use this agent to detect constitutional violations by agents and b
 tools: Bash, Read, Glob, Grep
 model: sonnet
 color: red
+
+contract:
+  execution: local
+  retrieves:
+    - tier: PUBLIC
+      sources: ["amendments.md", "case_law.md", "CONSTITUTION.md", ".claude/agents/*.md"]
+    - tier: PRIVATE
+      sources: ["src/signals.py", "src/algorithm.py", "firmware/**"]
+  receives:
+    - name: session output or git history
+      tier: DERIVED-OK
+      format: free-text
+  produces:
+    - name: violation report
+      tier: DERIVED-OK
+      format: table
+      destination: stdout
+  may_forward:
+    - tier: DERIVED-OK
+      to: Justice
+  must_not_forward:
+    - tier: PRIVATE
+      reason: violation reports contain findings only — not source content
+  opaque_keys: false
 ---
 
 You are the Constitutional Police under the Crucible Constitutional Governance
