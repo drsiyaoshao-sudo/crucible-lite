@@ -7,6 +7,21 @@ must never do without human approval.
 
 ---
 
+## Session-start check: pending CLAUDE.md adoption
+
+**If `docs/.adoption/PENDING.md` exists in this directory, an adoption is pending.**
+Before doing anything else this session, invoke the `claude-md-adopter` agent. It
+will read `docs/.adoption/source_CLAUDE.md` (the project's pre-Crucible CLAUDE.md),
+classify each section by destination, verify each proposal passes the Article I
+hook, and produce a per-destination edit proposal table for human review. Once the
+human applies the proposals and removes the sentinel + source files, normal Crucible
+work resumes.
+
+If `docs/.adoption/PENDING.md` does **not** exist, this section is informational
+only — skip it and proceed.
+
+---
+
 ## The two unconditional rules
 
 Read `CONSTITUTION.md` for the full text. The two Articles are non-negotiable:
@@ -40,7 +55,7 @@ docs/toolchain_config.md            ← active board, FQBN, pins, libs, blocked 
 crucible/                           ← infrastructure Python (no domain knowledge)
 src/                                ← generated project Python (events, analysis, plot)
                                       run /toolchain scaffold to create this directory
-.claude/agents/                     ← 17 agent definitions
+.claude/agents/                     ← 18 agent definitions
 .claude/commands/                   ← 10 slash command definitions
 ONBOARDING.md                       ← workflow maps and flowcharts
 ```
@@ -67,7 +82,7 @@ hard stop.
 
 ---
 
-## The agent roster (17 agents)
+## The agent roster (18 agents)
 
 ### Judicial Branch
 | Agent | Role |
@@ -101,6 +116,7 @@ hard stop.
 | `package-manager` | Python/brew/pio dependency management |
 | `stage-compactor` | Freezes and compacts case law at each stage gate |
 | `agent-updater` | Propagates Amendment/Bill changes to affected agent files |
+| `claude-md-adopter` | One-shot: distributes a pre-Crucible CLAUDE.md into the doc structure after `crucible init` adopts an existing project |
 
 ---
 

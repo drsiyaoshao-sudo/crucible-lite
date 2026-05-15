@@ -76,42 +76,11 @@ Read all files before producing output. Cross-check them against each other.
 - Every blocked toolchain in toolchain_config.md must reference Amendment 3.
 - Any case law entry that cites an amendment number — does that amendment exist?
 
-### CLAUDE.md merge audit (post-`crucible init`)
-
-If CLAUDE.md contains the marker block
-
-```
-<!-- ====== BEGIN CRUCIBLE FRAMEWORK SECTION ====== -->
-... template content ...
-<!-- ====== END CRUCIBLE FRAMEWORK SECTION ====== -->
-<!-- ====== BEGIN ORIGINAL PROJECT CLAUDE.md ====== -->
-... original content ...
-<!-- ====== END ORIGINAL PROJECT CLAUDE.md ====== -->
-```
-
-it was produced by `crucible init` against an existing CLAUDE.md. Audit it specifically:
-
-1. **Duplicated headings** — any heading (e.g. `## Project structure`, `## Setup`) that
-   appears in both halves with substantively similar content. Flag the pair and propose
-   which one to keep.
-2. **Conflicting instructions** — the framework template tells Claude Code to read certain
-   files in a fixed order (CONSTITUTION.md → amendments → device_context). The original
-   half may instruct different priorities. Flag conflicts.
-3. **Project-specific context worth preserving** — repo-summary paragraphs, hardware
-   layout notes, file-tree maps, build/flash instructions, language conventions — these
-   typically belong in the merged file under a "Project-specific guidance" section
-   after the Crucible framework intro. Identify and propose a placement.
-4. **Stale or trivially redundant content** — e.g. the original half's "this is a hardware
-   project, not a software application" is implied by the Crucible framework already.
-   Flag for removal.
-5. **Final structural proposal** — produce the *consolidated* CLAUDE.md as a fenced
-   markdown block, ordered as: framework intro (top), then a clear `## Project-specific
-   guidance` section with the surviving original content, then any project-specific
-   constitutional notes. The merge markers should be removed in the consolidated version.
-
-Output format for this audit is a normal gap table entry (severity = INFO or WARNING)
-plus the proposed consolidated CLAUDE.md in a fenced block at the end of the output.
-Do not write the consolidated file yourself — the human reviews and applies it.
+> **Note:** CLAUDE.md adoption (when a project's pre-existing CLAUDE.md needs to
+> be distributed into the Crucible doc structure after `crucible init`) is
+> handled by the dedicated `claude-md-adopter` agent, not by this one. If you
+> see `docs/.adoption/PENDING.md`, flag it as a WARNING and refer the human
+> to that agent.
 
 ---
 

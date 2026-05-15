@@ -99,26 +99,33 @@ diverge per project — that is the intended design, because Article I primitive
 differ between hardware targets and an Amendment ratified for one device should
 not bind another.
 
-## CLAUDE.md merge feature
+## CLAUDE.md adoption flow
 
 When `crucible init` is run in a directory that already has its own `CLAUDE.md`
-(typical when adopting Crucible into an existing project), the original CLAUDE.md
-is preserved verbatim beneath the Crucible template. The resulting merged file
-looks like:
+(typical when adopting Crucible into an existing project), the CLI does **not**
+overwrite or merge inline. Instead:
 
-```markdown
-<!-- ======== CRUCIBLE FRAMEWORK ENTRY-POINT (merged by `crucible init` on <date>) ======== -->
+1. The existing `CLAUDE.md` is moved to `docs/.adoption/source_CLAUDE.md`
+   (preserved verbatim, never lost).
+2. A sentinel `docs/.adoption/PENDING.md` is written explaining the next step.
+3. The fresh Crucible `CLAUDE.md` template is installed at the project root.
+4. The first Claude Code session sees the sentinel (the template's session-start
+   check tells Claude Code to look for it) and invokes the dedicated
+   `claude-md-adopter` agent.
 
-<!-- ====== BEGIN CRUCIBLE FRAMEWORK SECTION ====== -->
-... template content ...
-<!-- ====== END CRUCIBLE FRAMEWORK SECTION ====== -->
-<!-- ====== BEGIN ORIGINAL PROJECT CLAUDE.md ====== -->
-... original project content ...
-<!-- ====== END ORIGINAL PROJECT CLAUDE.md ====== -->
-```
+The `claude-md-adopter` agent:
 
-The merged file is committed as-is by `crucible init`. In your first Claude
-Code session, invoke the `doc-reviewer` agent — it recognises the marker
-block and produces a consolidated CLAUDE.md proposal (deduplicates headings,
-flags conflicting instructions, identifies project-specific guidance worth
-keeping). Review the proposal and commit the consolidated version yourself.
+- Reads `docs/.adoption/source_CLAUDE.md` and splits it into sections.
+- Classifies each section by destination:
+  - Device purpose / BOM → `docs/device_context.md`
+  - Toolchain, build, flash, pin map → `docs/toolchain_config.md`
+  - Repo navigation / coding conventions / build instructions → `REPO_GUIDE.md`
+    at the project root (new file)
+  - Project-level Crucible-relevant rules → tail of `CLAUDE.md`
+- Verifies every proposed insertion passes the Article I git pre-commit hook
+  (`.githooks/pre-commit` → `article1_check.py --staged`) before including it.
+- Outputs a per-destination edit proposal table; does **not** apply itself.
+
+The human reviews each proposal, applies the ones they accept, and removes the
+sentinel + source file once the adoption is complete. The agent never runs again
+in that project.

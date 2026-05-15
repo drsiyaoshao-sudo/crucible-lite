@@ -13,24 +13,9 @@ from pathlib import Path
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 CLAUDE_MD = "CLAUDE.md"
-MERGE_HEADER_BANNER = (
-    "<!-- ========================================================================\n"
-    "     CRUCIBLE FRAMEWORK ENTRY-POINT (merged by `crucible init` on {date})\n"
-    "\n"
-    "     This file was created by merging the Crucible CLAUDE.md template with the\n"
-    "     existing project CLAUDE.md found in this directory. Both sections are\n"
-    "     preserved verbatim, separated by the markers below.\n"
-    "\n"
-    "     ACTION REQUIRED: in your first Claude Code session here, ask the\n"
-    "     doc-reviewer agent to audit this file. It will produce a consolidated\n"
-    "     CLAUDE.md proposal that deduplicates, reorders, and reconciles the two\n"
-    "     halves. Commit the result yourself after review.\n"
-    "     ======================================================================== -->\n\n"
-)
-CRUCIBLE_BEGIN_MARKER = "<!-- ====== BEGIN CRUCIBLE FRAMEWORK SECTION ====== -->\n"
-CRUCIBLE_END_MARKER = "\n<!-- ====== END CRUCIBLE FRAMEWORK SECTION ====== -->\n\n"
-PROJECT_BEGIN_MARKER = "<!-- ====== BEGIN ORIGINAL PROJECT CLAUDE.md ====== -->\n\n"
-PROJECT_END_MARKER = "\n<!-- ====== END ORIGINAL PROJECT CLAUDE.md ====== -->\n"
+ADOPTION_DIR_REL = Path("docs/.adoption")
+ADOPTION_SOURCE_NAME = "source_CLAUDE.md"
+ADOPTION_PENDING_NAME = "PENDING.md"
 
 
 def harness_memory_path(project_path: Path) -> Path:
@@ -42,24 +27,40 @@ def _template_relpaths(templates_dir: Path) -> list[Path]:
     return [p.relative_to(templates_dir) for p in templates_dir.rglob("*") if p.is_file()]
 
 
-def _merge_claude_md(project_dir: Path, template_path: Path) -> bool:
-    """Merge an existing CLAUDE.md with the template version. Returns True if merged."""
+def _stage_adoption(project_dir: Path) -> bool:
+    """If CLAUDE.md exists, move it into docs/.adoption/ and write a sentinel.
+
+    Returns True if an adoption was staged (i.e. there was an existing CLAUDE.md).
+    """
     existing = project_dir / CLAUDE_MD
     if not existing.exists():
         return False
-    template_content = template_path.read_text(encoding="utf-8")
-    existing_content = existing.read_text(encoding="utf-8")
+
+    adoption_dir = project_dir / ADOPTION_DIR_REL
+    adoption_dir.mkdir(parents=True, exist_ok=True)
+    source_dest = adoption_dir / ADOPTION_SOURCE_NAME
+    shutil.move(str(existing), str(source_dest))
+
     today = dt.date.today().isoformat()
-    merged = (
-        MERGE_HEADER_BANNER.format(date=today)
-        + CRUCIBLE_BEGIN_MARKER
-        + template_content
-        + CRUCIBLE_END_MARKER
-        + PROJECT_BEGIN_MARKER
-        + existing_content
-        + PROJECT_END_MARKER
+    pending = adoption_dir / ADOPTION_PENDING_NAME
+    pending.write_text(
+        "# Crucible adoption PENDING\n\n"
+        f"`crucible init` ran in this directory on {today} and found an existing\n"
+        "`CLAUDE.md` that pre-dates Crucible adoption. The original content was\n"
+        f"preserved verbatim at `{ADOPTION_DIR_REL}/{ADOPTION_SOURCE_NAME}` and\n"
+        "the Crucible CLAUDE.md template was installed in its place.\n\n"
+        "## What to do next\n\n"
+        "In your first Claude Code session in this directory, invoke the\n"
+        "`claude-md-adopter` agent. It will:\n\n"
+        f"  1. Read `{ADOPTION_DIR_REL}/{ADOPTION_SOURCE_NAME}`.\n"
+        "  2. Classify each section by destination (device_context.md,\n"
+        "     toolchain_config.md, agent files, REPO_GUIDE.md, or CLAUDE.md tail).\n"
+        "  3. Verify every proposal passes the Article I git pre-commit hook.\n"
+        "  4. Produce a per-destination edit proposal table for human review.\n\n"
+        "Apply the proposals you accept, then remove this sentinel file and\n"
+        f"`{ADOPTION_DIR_REL}/{ADOPTION_SOURCE_NAME}` once the adoption is complete.\n",
+        encoding="utf-8",
     )
-    existing.write_text(merged, encoding="utf-8")
     return True
 
 
@@ -71,42 +72,28 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(f"error: templates directory not found at {TEMPLATES_DIR}", file=sys.stderr)
         return 2
 
+    # If CLAUDE.md already exists, stage it for adoption BEFORE checking conflicts.
+    adoption_staged = _stage_adoption(project_dir)
+
     template_files = _template_relpaths(TEMPLATES_DIR)
-
-    # CLAUDE.md is handled specially: merge instead of conflict.
-    claude_template = TEMPLATES_DIR / CLAUDE_MD
-    claude_merged = False
-
-    conflicts = []
-    for rel in template_files:
-        if rel.name == CLAUDE_MD and rel.parent == Path("."):
-            continue  # handled as merge below
-        if (project_dir / rel).exists():
-            conflicts.append(rel)
-
+    conflicts = [rel for rel in template_files if (project_dir / rel).exists()]
     if conflicts and not args.force:
         print(f"error: the following files already exist in {project_dir}:", file=sys.stderr)
         for c in conflicts:
             print(f"  {c}", file=sys.stderr)
         print(file=sys.stderr)
-        print("Re-run with --force to overwrite, or delete/move the conflicting files first.", file=sys.stderr)
-        print("(Note: CLAUDE.md is handled separately and will be merged automatically.)", file=sys.stderr)
+        print("Re-run with --force to overwrite, or move/remove the conflicting files first.", file=sys.stderr)
+        if adoption_staged:
+            print(
+                f"(Your original CLAUDE.md is safe at {ADOPTION_DIR_REL}/{ADOPTION_SOURCE_NAME}.)",
+                file=sys.stderr,
+            )
         return 1
 
-    # Copy all template files except top-level CLAUDE.md
     for rel in template_files:
-        if rel.name == CLAUDE_MD and rel.parent == Path("."):
-            continue
         dest = project_dir / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(TEMPLATES_DIR / rel, dest)
-
-    # Handle CLAUDE.md
-    if claude_template.exists():
-        if (project_dir / CLAUDE_MD).exists():
-            claude_merged = _merge_claude_md(project_dir, claude_template)
-        else:
-            shutil.copy2(claude_template, project_dir / CLAUDE_MD)
 
     memory_dir = project_dir / "docs" / "memory"
     memory_dir.mkdir(parents=True, exist_ok=True)
@@ -151,8 +138,8 @@ def cmd_init(args: argparse.Namespace) -> int:
             if not is_repo
             else f"Add Crucible governance scaffold to {project_name}"
         )
-        if claude_merged:
-            commit_msg += " (CLAUDE.md merged — review needed)"
+        if adoption_staged:
+            commit_msg += " (adoption pending — invoke claude-md-adopter)"
         subprocess.run(
             ["git", "commit", "-q", "-m", commit_msg],
             cwd=project_dir,
@@ -165,13 +152,12 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  registry: {crucible_registry} -> {project_dir}")
     if not args.no_git:
         print(f"  git hooks: core.hooksPath = .githooks")
-    if claude_merged:
+    if adoption_staged:
         print()
-        print("  *** CLAUDE.md MERGED — REVIEW NEEDED ***")
-        print("  Your existing CLAUDE.md was preserved verbatim beneath the Crucible template.")
-        print("  In your first Claude Code session here, run:")
-        print("    \"invoke doc-reviewer to audit the merged CLAUDE.md\"")
-        print("  doc-reviewer will produce a consolidated proposal you can review.")
+        print("  *** ADOPTION PENDING ***")
+        print(f"  Your original CLAUDE.md was moved to {ADOPTION_DIR_REL}/{ADOPTION_SOURCE_NAME}.")
+        print(f"  See {ADOPTION_DIR_REL}/{ADOPTION_PENDING_NAME} for next-step instructions.")
+        print(f"  First Claude Code task here: invoke the claude-md-adopter agent.")
     print()
 
     if args.no_claude:
@@ -213,8 +199,9 @@ def main(argv: list[str] | None = None) -> int:
     p_init.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing files that conflict with the templates "
-             "(CLAUDE.md is merged automatically regardless of this flag).",
+        help="Overwrite existing files that conflict with the templates. "
+             "An existing CLAUDE.md is always preserved separately under "
+             "docs/.adoption/source_CLAUDE.md regardless of this flag.",
     )
     p_init.set_defaults(func=cmd_init)
 
