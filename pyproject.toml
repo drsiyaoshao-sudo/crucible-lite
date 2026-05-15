@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "crucible-core"
 version = "0.1.0"
-description = "Constitutional governance framework for hardware development — Python infrastructure."
+description = "Constitutional governance framework for hardware development — Python infrastructure + project templates."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,5 +18,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.4.0"]
 
+[project.scripts]
+crucible = "crucible.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["crucible*"]
+
+[tool.setuptools.package-data]
+"*" = ["templates/**/*"]

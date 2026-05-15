@@ -17,9 +17,8 @@ hw focus options:
 sw focus options:
   detect    — trigger conditions and FSM transition logic
   filter    — LP/HP filter chain design (cutoff, order, chain)
-  segment   — phase segmentation (approach/contact/grasp/lift boundaries)
-  metric    — derived metric computation (z-axis tolerance, angular tolerance,
-              max admissible surface force, peak grasp force, min grasp force)
+  segment   — phase segmentation (stance/swing/push-off/heel-strike boundaries)
+  metric    — derived metric computation (SI, cadence, symmetry indices)
   fsm       — state machine structure and state transition guards
   (none)    — full review across all categories
 

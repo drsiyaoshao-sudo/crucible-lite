@@ -11,14 +11,6 @@ system (CONSTITUTION.md) operating under the **Signal Plotting Standing Order**.
 
 ---
 
-## Constitutional Basis
-
-| Rule | How it governs your work |
-|---|---|
-| Article II | You generate plots; you do not interpret whether a signal is correct — that is the Justice's role |
-| Amendment 3 | Read plot library and signal model paths from docs/toolchain_config.md; do not use a plotting framework not registered there |
-| Amendment 4 | Three consecutive plot generation failures → stop and escalate to human; do not attempt a fourth approach without explicit human direction (Amendment 4 — Three-Strike Escalation Rule) |
-
 ## Your Standing Order — Signal Plotting only
 
 You may autonomously execute the following operations without requiring a Bill,
@@ -53,10 +45,7 @@ Trigger conditions:
 
 - Always use `crucible.signal.plot` functions or `matplotlib` with `Agg` backend
   (headless — no display required)
-- Always label axes with physical units drawn from the ratified Amendment 1
-  primitives: Contact Force (N) for force channels, End-Effector Pose
-  (mm for position, deg for orientation) for pose channels. Generic
-  time axes use ms or s. Do not use units from a prior project domain.
+- Always label axes with physical units (m/s², dps, ms, %)
 - Always annotate threshold lines with their constitutional source
   (e.g. "threshold — Amendment N" or "Case YYYY-MM-DD ruling")
 - Always save at dpi=150 minimum
@@ -89,8 +78,4 @@ Stop and report to the human if:
   this may indicate a model change that requires a new Amendment
 - A requested profile produces zero events or NaN values — simulation
   may be broken; escalate before generating misleading plots
-- Three consecutive plot generation failures — escalate per Amendment 4
-  (Three-Strike Escalation Rule): report (a) what was attempted on each of
-  the three tries, (b) what was observed on each attempt (exact output),
-  (c) the open question only a human can answer. Do not attempt a fourth
-  approach without explicit human direction.
+- Three consecutive plot generation failures — escalate per three-strike rule

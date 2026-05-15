@@ -21,7 +21,7 @@ then remove the PROPOSED prefix to ratify.
 
 ### Amendment 2 — Stage Gate Order
 *Traces to: Article I + II*
-*Status: RATIFIED 2026-05-15*
+*Status: PROPOSED — ratify by removing this line*
 
 Development proceeds through exactly these stages in order, and no stage begins
 until the previous stage's exit criteria are explicitly confirmed by the human:
@@ -41,7 +41,7 @@ not a debugging tool.
 
 ### Amendment 3 — Toolchain Alignment
 *Traces to: Article II*
-*Status: RATIFIED 2026-05-15*
+*Status: PROPOSED — ratify by removing this line*
 
 Every agent working on this project must operate within the toolchain that is currently
 active and recorded in `docs/toolchain_config.md`. No agent may introduce a new
@@ -59,7 +59,7 @@ recorded in toolchain_config.md with a date and reason.
 
 ### Amendment 4 — Three-Strike Escalation Rule
 *Traces to: Article II*
-*Status: RATIFIED 2026-05-15*
+*Status: PROPOSED — ratify by removing this line*
 
 If a simulation, unit test, hardware smoke test, or iterative fix process fails to meet
 exit criteria within three attempts, the agent must stop, report the full status to the
@@ -240,69 +240,7 @@ Amendment 1 (Domain Primitives) is written here by `/spec collect` after human
 ratification. Subsequent project-specific amendments are added below Amendment 1
 as the project evolves.
 
-### Amendment 1 — Domain Primitives (Soft vs Rigid Cloth-Grasping Benchmark)
-*Traces to: Article I*
-*Status: RATIFIED 2026-05-14*
-
-**Governing rule (one sentence):**
-Every threshold, filter cutoff, FSM transition, controller-safety limit,
-benchmark metric definition, and algorithm parameter in this project must
-trace to one of the following two domain primitives. A parameter that cannot
-be so traced is a guess and is not permitted.
-
-**Domain primitives:**
-
-1. **Contact Force** (N) — Force at any physical contact interface between
-   the grasper and the environment (cloth–grasper interface, grasper–table
-   interface, finger-pad pinch line). Article-I evidence for this primitive
-   is supplied by the table-foot A301-1 array (with centroid computation
-   for contact location), the Franka built-in F_ext estimate at the
-   end-effector flange, and the finger-pad A301-25 pair. The Franka
-   controller's "quit on error" event is a derived admissibility gate of
-   this primitive — not a separate primitive.
-
-2. **End-Effector Pose** (mm in position, deg in orientation) — Cartesian
-   position and orientation of the grasper relative to the calibrated
-   table-zero frame. Orientation is commanded constant at (90°, 0°, 0°)
-   for every trial and is NOT a swept parameter; the achieved orientation
-   deviates from the command by residual Franka controller / mechanical
-   error, and this deviation is the physical basis of benchmark metric #2
-   (angular tolerance), reported as a passive observation across the set
-   of successful trials. The swept parameters under this primitive are
-   Cartesian position (notably approach z-offset) only. Article-I evidence
-   is supplied by the Franka FCI achieved-pose stream combined with the
-   per-session table-zero calibration record, with commanded pose logged
-   alongside for command-vs-achieved error analysis.
-
-**Physical or process justification:**
-The project target is a parameter-space comparison of grasper success
-regions on the task of pinching thin flat cloth from a hard surface. The
-boundaries of every success region — and therefore every benchmark metric —
-are characterized by exactly two physical quantities: how much force the
-contact system can sustain before the grasp fails (or the controller quits),
-and where in space the grasper is when that boundary is encountered.
-Metrics 3, 4, and 5 (max admissible surface force, peak grasp force,
-minimum grasp force) trace to Contact Force. Metrics 1 and 2 (z-axis
-tolerance, angular tolerance) trace to End-Effector Pose. No third primitive
-is needed, and adding one would conflate measurement with control input —
-specifically, finger displacement is a control input whose mapping to
-"amount of fabric pinched" is a correlation through cloth thickness, not a
-direct measurement.
-
-**Amendment it complements or constrains:**
-Precedes all other Amendments. All subsequent Amendments — stage gate order
-(Amendment 2), toolchain alignment (Amendment 3), three-strike escalation
-(Amendment 4) — must be consistent with these primitives. Every Bill that
-proposes a threshold, force limit, pose tolerance, or admissibility rule
-must cite one of these two primitives in its grounding section.
-
-**What happens without it:**
-Parameters are set by intuition or by fitting to data. The "controller
-agrees" admissibility criterion drifts toward whatever happens to work in
-a given session, biasing the comparison toward whichever grasper happens
-to be tuned best on the day. Article I cannot be enforced; the attorneys,
-code-reviewer, and hw-advisor agents have no anchor for their findings,
-and the published benchmark comparison loses physical traceability.
+> [Amendment 1 will appear here after /spec collect is run and ratified.]
 
 ---
 
@@ -310,10 +248,10 @@ and the published benchmark comparison loses physical traceability.
 
 | # | Title | Status | Traces to |
 |---|-------|--------|-----------|
-| 1 | Domain Primitives | RATIFIED 2026-05-14 | Article I |
-| 2 | Stage Gate Order | RATIFIED 2026-05-15 | Article I + II |
-| 3 | Toolchain Alignment | RATIFIED 2026-05-15 | Article II |
-| 4 | Three-Strike Escalation Rule | RATIFIED 2026-05-15 | Article II |
+| 1 | Domain Primitives | NOT YET RATIFIED — run /spec collect | Article I |
+| 2 | Stage Gate Order | PROPOSED | Article I + II |
+| 3 | Toolchain Alignment | PROPOSED | Article II |
+| 4 | Three-Strike Escalation Rule | PROPOSED | Article II |
 | 5 | Simulation is the Hardware Proxy | PROPOSED | Article I + II |
 | 6 | Signal Plot Mandate | PROPOSED | Article I + II |
 | 7 | Calibration Discipline | PROPOSED | Article I |

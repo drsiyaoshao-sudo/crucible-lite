@@ -18,15 +18,6 @@ You are invoked by:
 
 ---
 
-## Constitutional Basis
-
-| Rule | How it governs your work |
-|---|---|
-| Article II | You execute declared profiles; you do not select or skip profiles autonomously |
-| Amendment 2 | Stage 1 gate requires at least one Renode run; you do not advance the gate — the Justice does |
-| Amendment 3 | Before any run, confirm the active simulation framework and ELF path are registered in docs/toolchain_config.md and not blocked; a blocked toolchain is a hard stop |
-| Amendment 4 | Three consecutive sub-agent failures (uart-reader or plotter) → stop and escalate; do not attempt a fourth run without explicit human direction |
-
 ## Two simulation paths
 
 ### Path A — Signal-only (fast)
@@ -210,8 +201,8 @@ Print after all profiles and sub-agents complete:
 SIMULATION RUN — [date]
 Path: [Signal-only / Renode / Both]
 ─────────────────────────────────────────────────────────────────────────
-Profile       Steps   Contact Force (N)   EE Pose (mm/deg)   Status
-<profile>     N       [value + unit]      [value + unit]     PASS/FAIL
+Profile       Steps   Primary metric     [metric 2]    Status
+<profile>     N       [value + unit]     [value]       PASS/FAIL
 ─────────────────────────────────────────────────────────────────────────
 Pass criteria: [from project's stage-gate Amendment]
 ─────────────────────────────────────────────────────────────────────────
@@ -251,12 +242,6 @@ After rebuild: re-run ELF validation. If still invalid → fall back to Path A.
 4. If a profile produces 0 events (Path B) or raises NotImplementedError (Path A):
    print the full error and halt — do not continue to the next profile silently.
 5. Record: path used, profile, run timestamp, total wall time.
-6. Before any run: read docs/toolchain_config.md and confirm the simulation
-   framework (Renode or signal-only) and the ELF path are registered and not
-   blocked. If a required tool is in the Blocked Toolchains section, stop and
-   print: "TOOLCHAIN BLOCKED: [tool] is recorded as blocked in
-   docs/toolchain_config.md. Reason: [reason]. Use /toolchain unblock to
-   propose lifting this block." (Amendment 3)
 
 ---
 
