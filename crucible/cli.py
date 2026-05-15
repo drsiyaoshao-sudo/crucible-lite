@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import os
 import shutil
 import subprocess
@@ -11,23 +12,55 @@ from pathlib import Path
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
+CLAUDE_MD = "CLAUDE.md"
+MERGE_HEADER_BANNER = (
+    "<!-- ========================================================================\n"
+    "     CRUCIBLE FRAMEWORK ENTRY-POINT (merged by `crucible init` on {date})\n"
+    "\n"
+    "     This file was created by merging the Crucible CLAUDE.md template with the\n"
+    "     existing project CLAUDE.md found in this directory. Both sections are\n"
+    "     preserved verbatim, separated by the markers below.\n"
+    "\n"
+    "     ACTION REQUIRED: in your first Claude Code session here, ask the\n"
+    "     doc-reviewer agent to audit this file. It will produce a consolidated\n"
+    "     CLAUDE.md proposal that deduplicates, reorders, and reconciles the two\n"
+    "     halves. Commit the result yourself after review.\n"
+    "     ======================================================================== -->\n\n"
+)
+CRUCIBLE_BEGIN_MARKER = "<!-- ====== BEGIN CRUCIBLE FRAMEWORK SECTION ====== -->\n"
+CRUCIBLE_END_MARKER = "\n<!-- ====== END CRUCIBLE FRAMEWORK SECTION ====== -->\n\n"
+PROJECT_BEGIN_MARKER = "<!-- ====== BEGIN ORIGINAL PROJECT CLAUDE.md ====== -->\n\n"
+PROJECT_END_MARKER = "\n<!-- ====== END ORIGINAL PROJECT CLAUDE.md ====== -->\n"
+
 
 def harness_memory_path(project_path: Path) -> Path:
-    """Compute the Claude Code harness memory path for a project directory.
-
-    Claude Code encodes the absolute path by replacing every '/' with '-' and
-    storing the project under ~/.claude/projects/<encoded>/.
-    """
     encoded = str(project_path.resolve()).replace("/", "-")
     return Path.home() / ".claude" / "projects" / encoded
 
 
 def _template_relpaths(templates_dir: Path) -> list[Path]:
-    paths: list[Path] = []
-    for p in templates_dir.rglob("*"):
-        if p.is_file():
-            paths.append(p.relative_to(templates_dir))
-    return paths
+    return [p.relative_to(templates_dir) for p in templates_dir.rglob("*") if p.is_file()]
+
+
+def _merge_claude_md(project_dir: Path, template_path: Path) -> bool:
+    """Merge an existing CLAUDE.md with the template version. Returns True if merged."""
+    existing = project_dir / CLAUDE_MD
+    if not existing.exists():
+        return False
+    template_content = template_path.read_text(encoding="utf-8")
+    existing_content = existing.read_text(encoding="utf-8")
+    today = dt.date.today().isoformat()
+    merged = (
+        MERGE_HEADER_BANNER.format(date=today)
+        + CRUCIBLE_BEGIN_MARKER
+        + template_content
+        + CRUCIBLE_END_MARKER
+        + PROJECT_BEGIN_MARKER
+        + existing_content
+        + PROJECT_END_MARKER
+    )
+    existing.write_text(merged, encoding="utf-8")
+    return True
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -39,19 +72,41 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 2
 
     template_files = _template_relpaths(TEMPLATES_DIR)
-    conflicts = [rel for rel in template_files if (project_dir / rel).exists()]
+
+    # CLAUDE.md is handled specially: merge instead of conflict.
+    claude_template = TEMPLATES_DIR / CLAUDE_MD
+    claude_merged = False
+
+    conflicts = []
+    for rel in template_files:
+        if rel.name == CLAUDE_MD and rel.parent == Path("."):
+            continue  # handled as merge below
+        if (project_dir / rel).exists():
+            conflicts.append(rel)
+
     if conflicts and not args.force:
         print(f"error: the following files already exist in {project_dir}:", file=sys.stderr)
         for c in conflicts:
             print(f"  {c}", file=sys.stderr)
-        print("", file=sys.stderr)
+        print(file=sys.stderr)
         print("Re-run with --force to overwrite, or delete/move the conflicting files first.", file=sys.stderr)
+        print("(Note: CLAUDE.md is handled separately and will be merged automatically.)", file=sys.stderr)
         return 1
 
+    # Copy all template files except top-level CLAUDE.md
     for rel in template_files:
+        if rel.name == CLAUDE_MD and rel.parent == Path("."):
+            continue
         dest = project_dir / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(TEMPLATES_DIR / rel, dest)
+
+    # Handle CLAUDE.md
+    if claude_template.exists():
+        if (project_dir / CLAUDE_MD).exists():
+            claude_merged = _merge_claude_md(project_dir, claude_template)
+        else:
+            shutil.copy2(claude_template, project_dir / CLAUDE_MD)
 
     memory_dir = project_dir / "docs" / "memory"
     memory_dir.mkdir(parents=True, exist_ok=True)
@@ -74,8 +129,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             crucible_registry.symlink_to(project_dir)
     elif crucible_registry.exists():
         print(
-            f"warning: {crucible_registry} already exists and is not a symlink; "
-            f"leaving it alone. Remove it if you want crucible to manage this slot.",
+            f"warning: {crucible_registry} already exists and is not a symlink; leaving it alone.",
             file=sys.stderr,
         )
     else:
@@ -97,6 +151,8 @@ def cmd_init(args: argparse.Namespace) -> int:
             if not is_repo
             else f"Add Crucible governance scaffold to {project_name}"
         )
+        if claude_merged:
+            commit_msg += " (CLAUDE.md merged — review needed)"
         subprocess.run(
             ["git", "commit", "-q", "-m", commit_msg],
             cwd=project_dir,
@@ -109,6 +165,13 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  registry: {crucible_registry} -> {project_dir}")
     if not args.no_git:
         print(f"  git hooks: core.hooksPath = .githooks")
+    if claude_merged:
+        print()
+        print("  *** CLAUDE.md MERGED — REVIEW NEEDED ***")
+        print("  Your existing CLAUDE.md was preserved verbatim beneath the Crucible template.")
+        print("  In your first Claude Code session here, run:")
+        print("    \"invoke doc-reviewer to audit the merged CLAUDE.md\"")
+        print("  doc-reviewer will produce a consolidated proposal you can review.")
     print()
 
     if args.no_claude:
@@ -150,7 +213,8 @@ def main(argv: list[str] | None = None) -> int:
     p_init.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing files that conflict with the templates",
+        help="Overwrite existing files that conflict with the templates "
+             "(CLAUDE.md is merged automatically regardless of this flag).",
     )
     p_init.set_defaults(func=cmd_init)
 
