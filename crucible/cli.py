@@ -51,6 +51,12 @@ def cmd_new(args: argparse.Namespace) -> int:
 
     if not args.no_git:
         subprocess.run(["git", "init", "-q"], cwd=project_dir, check=True)
+        if (project_dir / ".githooks" / "pre-commit").exists():
+            subprocess.run(
+                ["git", "config", "core.hooksPath", ".githooks"],
+                cwd=project_dir,
+                check=True,
+            )
         subprocess.run(["git", "add", "-A"], cwd=project_dir, check=True)
         subprocess.run(
             ["git", "commit", "-q", "-m", f"Initialize {project_name} from crucible-core templates"],
