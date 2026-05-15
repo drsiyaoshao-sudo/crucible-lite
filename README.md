@@ -24,12 +24,12 @@ police) and 10 slash commands that operationalise these rules through a judicial
 ```
 crucible-core/
 ├── crucible/                 ← Python infrastructure package (pip-installable)
-│   ├── cli.py                ← `crucible new <project>` CLI
+│   ├── cli.py                ← `crucible init` CLI
 │   ├── signal/               ← UART event parsing, plot utilities
 │   ├── transport/            ← BLE / serial transport helpers
 │   ├── sim/                  ← Renode simulation bridge
 │   └── checks/               ← CI integrity checks
-├── templates/                ← copied into new project workspaces by `crucible new`
+├── templates/                ← copied into project workspaces by `crucible init`
 │   ├── CLAUDE.md
 │   ├── CONSTITUTION.md
 │   ├── .claude/
@@ -60,18 +60,26 @@ Verify:
 crucible --help
 ```
 
-## Start a new project
+## Start (or adopt) a project
 
 ```bash
-crucible new <project-name>
+cd /path/to/your/project       # any directory you want Crucible governance applied to
+crucible init                   # copies templates here; launches Claude Code
 ```
 
 This:
-1. Creates `~/crucible/<project-name>/`.
-2. Copies `templates/` into it.
-3. Creates `<project>/docs/memory/` and symlinks the Claude Code harness memory path to it,
+1. Copies `templates/` into the current directory (CLAUDE.md, CONSTITUTION.md,
+   `.claude/`, `.githooks/`, `docs/governance/`, `docs/device_context.md`,
+   `docs/toolchain_config.md`).
+2. Creates `docs/memory/` and symlinks Claude Code's harness memory path to it,
    so per-project auto-memory lives inside the project directory.
-4. Runs `git init` and makes an initial commit.
+3. Creates a discovery shortcut: `~/crucible/<basename>` → `<project-dir>`.
+4. If the directory has no `.git/`, runs `git init`; either way activates the
+   Article I pre-commit hook (`git config core.hooksPath .githooks`) and
+   creates a commit with the Crucible scaffold.
+5. Execs into Claude Code if `claude` is on PATH.
+
+Flags: `--no-git`, `--no-claude`, `--force` (overwrite conflicts).
 
 Then in the new directory:
 1. Open Claude Code.
@@ -85,8 +93,8 @@ Then in the new directory:
 
 | You want to… | Do this |
 |---|---|
-| Work on an existing project | `cd ~/crucible/<project>` and open Claude Code |
-| Start a new project | `crucible new <project>` and follow the spec / toolchain flow above |
+| Work on an existing project | `cd ~/crucible/<project>` (registry shortcut) or `cd <project-dir>` and open Claude Code |
+| Adopt Crucible in an existing project | `cd <project-dir> && crucible init` |
 | Improve the framework | Edit files in `~/crucible/core/` directly (this repo) |
 | Pull framework updates into an existing project | Manual — each project is its own constitutional fork; cherry-pick or diff against `crucible-core/templates/` |
 
@@ -112,8 +120,8 @@ The old layout assumed one project per repo and burned project-specific customiz
 worked for a single project but did not scale — starting a second project meant either
 hand-de-customising or forking-then-stripping a heavily-modified copy.
 
-The new layout makes the framework reusable: `pipx install -e` once, then `crucible new`
-per project. Per-project state (governance record, propagated agent edits, populated
+The new layout makes the framework reusable: `pipx install -e` once, then `crucible init`
+in each project's directory. Per-project state (governance record, propagated agent edits, populated
 toolchain config) lives in the project workspace, not the framework.
 
 ### What moved where
@@ -149,7 +157,7 @@ the framework/instance split:
    (e.g. `crucible-lite/` → `crucible-<your-project>/`).
 2. Clone this branch into a new `crucible-core/` directory and `pipx install -e` it.
 3. The existing project workspace stays as-is — it is now your first project workspace.
-   Future projects use `crucible new`.
+   Future projects use `crucible init` in their own working directory.
 
 Open a pull request to merge this branch into `main` once you have reviewed the structural
 diff.
