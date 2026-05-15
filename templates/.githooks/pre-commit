@@ -3,7 +3,8 @@
 # Applies to every commit — agent or human engineer, no exceptions.
 # Blocks commits that introduce empirical values without Amendment 1 citations.
 #
-# Install once per clone:
+# Activated by `crucible new` automatically via `git config core.hooksPath .githooks`.
+# For an existing clone, activate manually with:
 #   git config core.hooksPath .githooks
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"

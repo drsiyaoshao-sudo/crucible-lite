@@ -1,119 +1,163 @@
-# Crucible-Lite — Hardware CI/CD Framework for Embedded Design
+# crucible-core
 
-**Crucible-Lite** is an agent-assisted framework for bringing CI/CD discipline to hardware product development. It is designed for **system integrators** — engineers who design circuits, choose sensors, write firmware, and need a structured, repeatable path from algorithm idea to deployed device.
+Constitutional governance framework for hardware development — Python infrastructure and project templates.
 
-It is not a build tool. It is not a hardware description language. It is a **governance model** that turns human decisions into traceable, physical-evidence-backed records — the same way good software CI/CD turns code changes into auditable commit histories.
+> **Heads-up:** this repository was renamed from `crucible-lite` and **restructured** on 2026-05-15.
+> The previous mono-repo layout (governance + framework + one project's customizations all at
+> the root) has been split into a reusable framework (this branch) and per-project workspaces.
+> See [Structural rebase](#structural-rebase) below for details.
 
----
+## What is Crucible?
 
-## The Core Problem It Solves
+Crucible is a constitutional governance framework for hardware development. It enforces:
 
-Hardware development fails at predictable points:
+- **Article I — Signal First** — every threshold, parameter, filter cutoff, and FSM transition
+  must trace to a named domain primitive (a first-order physically measurable quantity).
+- **Article II — Human in the Loop** — irreversible actions require explicit human approval.
 
-1. **Algorithm validated in Python, broken on device.** Nobody connected the simulation to the hardware in a structured way. The algorithm worked in NumPy but the firmware used integer math.
+The framework provides 17 agents (attorneys, advisors, reviewers, simulator orchestrators,
+police) and 10 slash commands that operationalise these rules through a judicial process
+(Bills, Hearings, Amendments, Case Law) on top of Claude Code.
 
-2. **Toolchain switched mid-project.** Someone found a better library at Stage 3. Two weeks of validated work was silently invalidated.
-
-3. **"It worked yesterday."** No traceable record of what changed, when, and why. The last known-good state is a mystery.
-
-4. **Decisions made from intuition.** A threshold gets changed because it "looked about right." No physical evidence, no record.
-
-5. **Hardware used as a debugging tool.** The board is flashed 40 times before the algorithm is correct. Each flash is a context switch, a potential brick, and a lost afternoon.
-
-Crucible addresses all five with a single mechanism: **every change that touches algorithm, firmware, hardware, or toolchain must be backed by physical evidence and approved by a human before it goes in.**
-
----
-
-## The Two Articles
-
-Everything in Crucible derives from two unconditional rules:
-
-### Article I — Physics First
-
-No parameter, threshold, gate, or algorithm decision may be defined unless it traces to a first-order physically measurable quantity dictates the system charateristics of your device trying to measure or use in the host functions, e.g., a flow rate meter can infer the porosity of a filter.
-
-*For a gait wearable:* all parameters trace to cadence, step length, or vertical oscillation.  
-*For a thermostat:* all parameters trace to thermal mass, heat transfer coefficient, or occupancy signal.  
-*For a glucose monitor:* all parameters trace to optical absorption coefficient and sample path length.
-
-IMU readings, ADC counts, and filter outputs are *measurements* of physical quantities — not the quantities themselves. An engineer who sets a threshold by fitting it to data without naming the physical quantity it represents has guessed, not derived.
-
-**This Article is unconditional.** A parameter that cannot be traced to a measurable physical quantity is not a parameter — it is a guess. Guesses are not permitted in Crucible.
-
-### Article II — Human in the Loop
-
-No decision that changes the physical or algorithmic direction of the project may be made by an agent alone.
-
-**An agent executes. A human decides.**
-
-The boundary: any action whose consequence cannot be fully reversed by a single `git revert` requires human approval before execution. Flashing firmware to hardware is the limiting case — it is irreversible within a session.
-
-Evidence — signal plots, UART output, test results, field measurements — is the only valid input to a human decision. Argument from intuition, prior success, or expediency is not valid.
-
-**This Article is unconditional.**
-
----
-
-## The Pipeline
+## Layout
 
 ```
- ┌─────────────────────────────────────────────────────────────────┐
- │                    CRUCIBLE PIPELINE                            │
- │                                                                 │
- │  Stage 0 ── HIL Toolchain Lock  ◄─── START HERE (always)       │
- │                │                                                │
- │                ▼                                                │
- │  Stage 1 ── Simulation          ◄─── also fed by field data ┐  │
- │                │                                             │  │
- │                ▼                                             │  │
- │  Stage 2 ── Firmware Integration on Dev Kit                  │  │
- │                │                                             │  │
- │                ▼                                             │  │
- │  Stage 3 ── Field Test          ──── data captured ──────────┘  │
- │                │                                                │
- │                ▼                                                │
- │  Stage 4 ── Host Integration    (smart home, gateway, cloud)    │
- └─────────────────────────────────────────────────────────────────┘
+crucible-core/
+├── crucible/                 ← Python infrastructure package (pip-installable)
+│   ├── cli.py                ← `crucible init` CLI
+│   ├── signal/               ← UART event parsing, plot utilities
+│   ├── transport/            ← BLE / serial transport helpers
+│   ├── sim/                  ← Renode simulation bridge
+│   └── checks/               ← CI integrity checks
+├── templates/                ← copied into project workspaces by `crucible init`
+│   ├── CLAUDE.md
+│   ├── CONSTITUTION.md
+│   ├── .claude/
+│   │   ├── agents/           ← 17 agent definitions
+│   │   └── commands/         ← 10 slash commands
+│   └── docs/
+│       ├── governance/amendments.md   ← Amendments 1–11 (1–4 PROPOSED until ratified)
+│       ├── governance/case_law.md
+│       ├── device_context.md          ← placeholder
+│       └── toolchain_config.md        ← placeholder
+└── pyproject.toml
 ```
 
-**Stage 0 is the first gate, not the last.** Toolchain failures (wrong board variant, USB cable, BLE scan name, UF2 offset) discovered at Stage 3 cost days. Discovered at Stage 0, they cost 20 minutes.
+## Install
 
-**The simulation loop is bidirectional.** Stage 1 starts from a physics model of your device domain. After Stage 3 field tests, real measurement data replays back through simulation — this keeps the physics-first principle intact as the device encounters real-world variance. Simulation is never frozen; it evolves with evidence.
+```bash
+git clone https://github.com/SNI22/crucible_lite.git ~/crucible/core
+pipx install -e ~/crucible/core
+```
 
----
+`pipx install -e` creates an isolated venv for the `crucible` CLI and links it on PATH.
+Editable install means `git pull` in `~/crucible/core/` is picked up automatically —
+no re-install needed.
 
-## What Crucible Is Not
+Verify:
 
-- **Not a build system.** It doesn't replace Make, CMake, PlatformIO, or Arduino CLI. It governs *which* of those tools is active and *why*.
-- **Not a CI server.** GitHub Actions, Buildkite, and Jenkins run pipelines. Crucible defines what those pipelines must enforce.
-- **Not an algorithm library.** It provides no signal processing code. It provides the governance structure that validates whatever signal processing your device needs.
-- **Not a hardware design tool.** It reads your existing BOM and schematic and provides grounded suggestions from test results. It does not design circuits.
+```bash
+crucible --help
+```
 
----
+## Start (or adopt) a project
 
-## Who It Is For
+```bash
+cd /path/to/your/project       # any directory you want Crucible governance applied to
+crucible init                   # copies templates here; launches Claude Code
+```
 
-**System integrators** building connected hardware: wearables, smart home sensors, industrial monitors, medical-adjacent devices. Teams of 1–10 engineers who cannot afford a dedicated QA process but cannot afford to ship wrong data either.
+This:
+1. Copies `templates/` into the current directory (CLAUDE.md, CONSTITUTION.md,
+   `.claude/`, `.githooks/`, `docs/governance/`, `docs/device_context.md`,
+   `docs/toolchain_config.md`).
+2. Creates `docs/memory/` and symlinks Claude Code's harness memory path to it,
+   so per-project auto-memory lives inside the project directory.
+3. Creates a discovery shortcut: `~/crucible/<basename>` → `<project-dir>`.
+4. If the directory has no `.git/`, runs `git init`; either way activates the
+   Article I pre-commit hook (`git config core.hooksPath .githooks`) and
+   creates a commit with the Crucible scaffold.
+5. Execs into Claude Code if `claude` is on PATH.
 
-You bring: the circuit, the BOM, the algorithm idea, the dev kit.  
-Crucible brings: the governance structure, the agent workflow, the feedback loop, and the paper trail.
+Flags: `--no-git`, `--no-claude`, `--force` (overwrite conflicts).
 
----
+Then in the new directory:
+1. Open Claude Code.
+2. Run `/spec collect` to interview about device purpose, signal inventory, and ratify
+   project-specific Amendment 1 (domain primitives).
+3. Run the `agent-updater` agent to propagate Amendment 1 into the agent set.
+4. Run `/toolchain init` to register hardware, pins, libraries, blocked toolchains.
+5. Continue through `/session 0` (HIL toolchain lock) and subsequent stage gates.
 
-## Getting Started
+## How Crucible is meant to be used
 
-1. Read [ONBOARDING.md](ONBOARDING.md) — 15 minutes, establishes reading order
-2. Read [CONSTITUTION.md](CONSTITUTION.md) — the full governance model (Articles + Amendment process)
-3. Fork this repo and run `/toolchain init` to register your hardware
-4. Run `/session 0` — HIL toolchain lock for your dev kit
-5. File your first Bill when you want to change anything
+| You want to… | Do this |
+|---|---|
+| Work on an existing project | `cd ~/crucible/<project>` (registry shortcut) or `cd <project-dir>` and open Claude Code |
+| Adopt Crucible in an existing project | `cd <project-dir> && crucible init` |
+| Improve the framework | Edit files in `~/crucible/core/` directly (this repo) |
+| Pull framework updates into an existing project | Manual — each project is its own constitutional fork; cherry-pick or diff against `crucible-core/templates/` |
 
-**Reference implementation:** [crucible-comfort](https://github.com/rturcottetardif/crucible-comfort) is a complete implementation of Crucible on a real device — thermal comfort wearable on nRF52840 + BLE. All stages are documented with real results. See [examples/crucible_comfort/](examples/crucible_comfort/README.md) for a guided tour of what to look at first.
+Each `crucible-<project>` workspace is **independent of `crucible-core` after creation**.
+Constitutional records (`docs/governance/amendments.md`, ratifications, case law) diverge
+per project — that is the intended design, because Article I primitives differ between
+hardware targets and an Amendment ratified for one device should not bind another.
 
-Crucible-Comfort demonstrates the governance architecture transferring from GaitSense (biomechanics) to HVAC thermodynamics without modification. The constitutional hooks enforce Physics First on thermodynamic parameters — every threshold traces to thermal mass, heat transfer coefficient, or occupancy signal. This is the cleanest implementation of the constitutional structure, built without the trial and error of the first domain.
+## Structural rebase
 
----
+This branch (`framework-restructure`) is the result of splitting the old mono-repo into:
 
-## The Name
+- **Framework** (this branch, intended to become `main`) — `crucible/` infrastructure +
+  `templates/` project skeleton + `crucible` CLI. Reusable across many projects.
+- **Per-project workspaces** — each project gets its own directory (e.g.
+  `~/crucible/cloth-grasp/`) with its own ratified Amendment 1, customised agents,
+  populated `device_context.md` and `toolchain_config.md`, and its own git history.
 
-A crucible is the vessel in which materials are subjected to extreme conditions to test and refine their properties. The same physics-first, evidence-only principle that governs metallurgy governs this framework. You do not declare a material pure because it looks right. You measure it.
+### Why the change
+
+The old layout assumed one project per repo and burned project-specific customizations
+(domain primitives, agent edits, toolchain records) into the framework files directly. That
+worked for a single project but did not scale — starting a second project meant either
+hand-de-customising or forking-then-stripping a heavily-modified copy.
+
+The new layout makes the framework reusable: `pipx install -e` once, then `crucible init`
+in each project's directory. Per-project state (governance record, propagated agent edits, populated
+toolchain config) lives in the project workspace, not the framework.
+
+### What moved where
+
+| Was in old `main` | Is now |
+|---|---|
+| `crucible/` (Python infra) | `crucible/` (here), pip-installable via `pyproject.toml` |
+| `.claude/agents/`, `.claude/commands/` | `templates/.claude/agents/`, `templates/.claude/commands/` — copied into new projects |
+| `CLAUDE.md`, `CONSTITUTION.md` | `templates/CLAUDE.md`, `templates/CONSTITUTION.md` — copied into new projects |
+| `docs/governance/`, `docs/device_context.md`, `docs/toolchain_config.md` | `templates/docs/...` — copied into new projects |
+| `examples/`, `CHANGELOG.md`, `ONBOARDING.md`, etc. | Removed — these were reference-implementation artefacts that didn't fit the framework/instance split |
+
+The agent and command files in `templates/.claude/` still carry the crucible-comfort
+gait-domain reference (stance/swing/heel-strike, m/s², dps) from when the repo carried
+that example implementation. Each new project's `agent-updater` propagation pass after
+`/spec collect` overwrites those references with the project's own primitives — so the
+reference content is not stale framework, it is a starter template.
+
+### Existing branches
+
+- `main` — old structure (pre-restructure). Unchanged on this branch.
+- `cloth_grasp` — the first project that used the old structure, now extracted to a
+  standalone workspace at `~/crucible/cloth-grasp/` locally. The branch is preserved
+  on this repo for history. New cloth-grasp work continues on that branch but in a
+  different working directory.
+
+### Migration checklist for existing forks
+
+If you have an existing fork of this repo at the old structure and want to migrate to
+the framework/instance split:
+
+1. Rename your local directory to reflect the project it currently represents
+   (e.g. `crucible-lite/` → `crucible-<your-project>/`).
+2. Clone this branch into a new `crucible-core/` directory and `pipx install -e` it.
+3. The existing project workspace stays as-is — it is now your first project workspace.
+   Future projects use `crucible init` in their own working directory.
+
+Open a pull request to merge this branch into `main` once you have reviewed the structural
+diff.
