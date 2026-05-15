@@ -46,12 +46,12 @@ crucible-core/
 ## Install
 
 ```bash
-git clone https://github.com/SNI22/crucible_lite.git ~/code/crucible-core
-pipx install -e ~/code/crucible-core
+git clone https://github.com/SNI22/crucible_lite.git ~/crucible/core
+pipx install -e ~/crucible/core
 ```
 
 `pipx install -e` creates an isolated venv for the `crucible` CLI and links it on PATH.
-Editable install means `git pull` in `~/code/crucible-core/` is picked up automatically —
+Editable install means `git pull` in `~/crucible/core/` is picked up automatically —
 no re-install needed.
 
 Verify:
@@ -67,7 +67,7 @@ crucible new <project-name>
 ```
 
 This:
-1. Creates `~/code/crucible-<project-name>/`.
+1. Creates `~/crucible/<project-name>/`.
 2. Copies `templates/` into it.
 3. Creates `<project>/docs/memory/` and symlinks the Claude Code harness memory path to it,
    so per-project auto-memory lives inside the project directory.
@@ -85,9 +85,9 @@ Then in the new directory:
 
 | You want to… | Do this |
 |---|---|
-| Work on an existing project | `cd ~/code/crucible-<project>` and open Claude Code |
+| Work on an existing project | `cd ~/crucible/<project>` and open Claude Code |
 | Start a new project | `crucible new <project>` and follow the spec / toolchain flow above |
-| Improve the framework | Edit files in `~/code/crucible-core/` directly (this repo) |
+| Improve the framework | Edit files in `~/crucible/core/` directly (this repo) |
 | Pull framework updates into an existing project | Manual — each project is its own constitutional fork; cherry-pick or diff against `crucible-core/templates/` |
 
 Each `crucible-<project>` workspace is **independent of `crucible-core` after creation**.
@@ -102,7 +102,7 @@ This branch (`framework-restructure`) is the result of splitting the old mono-re
 - **Framework** (this branch, intended to become `main`) — `crucible/` infrastructure +
   `templates/` project skeleton + `crucible` CLI. Reusable across many projects.
 - **Per-project workspaces** — each project gets its own directory (e.g.
-  `~/code/crucible-cloth-grasp/`) with its own ratified Amendment 1, customised agents,
+  `~/crucible/cloth-grasp/`) with its own ratified Amendment 1, customised agents,
   populated `device_context.md` and `toolchain_config.md`, and its own git history.
 
 ### Why the change
@@ -136,7 +136,7 @@ reference content is not stale framework, it is a starter template.
 
 - `main` — old structure (pre-restructure). Unchanged on this branch.
 - `cloth_grasp` — the first project that used the old structure, now extracted to a
-  standalone workspace at `~/code/crucible-cloth-grasp/` locally. The branch is preserved
+  standalone workspace at `~/crucible/cloth-grasp/` locally. The branch is preserved
   on this repo for history. New cloth-grasp work continues on that branch but in a
   different working directory.
 

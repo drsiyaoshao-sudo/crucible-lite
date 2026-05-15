@@ -25,7 +25,7 @@ def harness_memory_path(project_path: Path) -> Path:
 def cmd_new(args: argparse.Namespace) -> int:
     project_name = args.name
     base_dir = Path(args.dir).expanduser().resolve()
-    project_dir = base_dir / f"crucible-{project_name}"
+    project_dir = base_dir / project_name
 
     if not TEMPLATES_DIR.exists():
         print(f"error: templates directory not found at {TEMPLATES_DIR}", file=sys.stderr)
@@ -53,12 +53,12 @@ def cmd_new(args: argparse.Namespace) -> int:
         subprocess.run(["git", "init", "-q"], cwd=project_dir, check=True)
         subprocess.run(["git", "add", "-A"], cwd=project_dir, check=True)
         subprocess.run(
-            ["git", "commit", "-q", "-m", f"Initialize crucible-{project_name} from crucible-core templates"],
+            ["git", "commit", "-q", "-m", f"Initialize {project_name} from crucible-core templates"],
             cwd=project_dir,
             check=False,
         )
 
-    print(f"crucible-{project_name} created at {project_dir}")
+    print(f"{project_name} created at {project_dir}")
     print(f"  templates copied from {TEMPLATES_DIR}")
     print(f"  memory: {memory_dir} (symlinked from {symlink_path})")
     if not args.no_git:
@@ -78,11 +78,11 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command")
 
     p_new = sub.add_parser("new", help="Create a new Crucible project workspace.")
-    p_new.add_argument("name", help="Project name (will be prefixed with 'crucible-')")
+    p_new.add_argument("name", help="Project name (used as the directory name verbatim).")
     p_new.add_argument(
         "--dir",
-        default="~/code",
-        help="Parent directory in which to create the project (default: ~/code)",
+        default="~/crucible",
+        help="Parent directory in which to create the project (default: ~/crucible)",
     )
     p_new.add_argument(
         "--no-git",
