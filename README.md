@@ -100,13 +100,33 @@ Crucible brings: the governance structure, the agent workflow, the feedback loop
 
 ---
 
+## The Enforcement Stack
+
+Crucible enforces constitutional rules at four layers, so a bypass at one layer is caught by the next:
+
+| Layer | When it fires | What it checks | Bypass resistance |
+|-------|--------------|---------------|-------------------|
+| Agent hooks | Every Edit/Write/Bash tool call | Article I citation + primitive name; Bash writes to Layer 2 without Hearing | Fires before the tool executes |
+| Pre-commit | Every `git commit` | Article I, Corpus Supremacy (Amendment 12), Stage Gate Order | Blocks the commit |
+| Pre-push | Every `git push` | Same as pre-commit, full diff vs remote | Catches `--no-verify` at commit time |
+| Police agent | Session start, gate checks | Informal rulings, incomplete Hearing entries, Article I in history, three-strike | Blocks stage gate exit |
+
+**Article I citation rule:** a comment must name an actual domain primitive from Amendment 1, not just contain the words "traces to." `# Traces to: sensor mismatch (empirical)` fails. `# Traces to: Floor Acceleration (Amendment 1 primitive 1)` passes. This closes the fake-comment bypass.
+
+**Corpus Supremacy (Amendment 12):** `src/signals.py` and `src/algorithm.py` — the physics model and algorithm — cannot be committed without a complete Judicial Hearing on record. A complete hearing requires Attorney-A argued, Attorney-B argued, and Justice ruled sections. A missing section is an informal ruling, which is not sufficient.
+
+**Knowledge graph corpus:** governance documents are split into individual files with machine-readable manifests. `docs/governance/amendments/MANIFEST.md` and `docs/governance/hearings/MANIFEST.md` are always small and always current. Enforcement checks query the manifest first — structural completeness is validated by checking section flags, not by grepping a growing monolith.
+
+---
+
 ## Getting Started
 
 1. Read [ONBOARDING.md](ONBOARDING.md) — 15 minutes, establishes reading order
 2. Read [CONSTITUTION.md](CONSTITUTION.md) — the full governance model (Articles + Amendment process)
 3. Fork this repo and run `/toolchain init` to register your hardware
-4. Run `/session 0` — HIL toolchain lock for your dev kit
-5. File your first Bill when you want to change anything
+4. Install git hooks: `cp scripts/pre-commit .git/hooks/ && cp scripts/pre-push .git/hooks/ && chmod +x .git/hooks/pre-commit .git/hooks/pre-push`
+5. Run `/session 0` — HIL toolchain lock for your dev kit
+6. File your first Bill when you want to change anything
 
 **Reference implementation:** [crucible-comfort](https://github.com/rturcottetardif/crucible-comfort) is a complete implementation of Crucible on a real device — thermal comfort wearable on nRF52840 + BLE. All stages are documented with real results. See [examples/crucible_comfort/](examples/crucible_comfort/README.md) for a guided tour of what to look at first.
 

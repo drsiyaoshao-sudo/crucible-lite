@@ -31,7 +31,7 @@ The elevator pitch: what Crucible solves, the five failure modes, the two Articl
 The governance model in full. Pay particular attention to:
 - Article I (Signal First) — you will need to name your domain primitives before writing any code
 - The distinction between a **Bill** (a change proposal), a **Hearing** (a conflict resolution), and an **Amendment** (a new governance rule)
-- The hw-advisor role — this is what gives you design feedback grounded in test results
+- The Hearing procedure — specifically the three required sections (Attorney-A, Attorney-B, Justice ruling)
 
 ### 4. [docs/governance/adoption_guide.md](docs/governance/adoption_guide.md)
 How to fork and adapt this framework for your specific device. Covers which parts are universal, which parts are device-specific, and what you must write before your first session.
@@ -80,21 +80,73 @@ Know the answers to:
 - How do you flash firmware? (UF2, J-Link, DFU, JTAG)
 - How do you observe output? (USB serial, BLE, RTT, UART)
 
-Run `/toolchain init` to record these formally. The toolchain janitor will walk you through each field interactively.
+Run `/toolchain init` to record these formally.
 
-### D. Activate git hooks (one command per clone)
+### D. Install git hooks (one command per clone)
 
 ```bash
-git config core.hooksPath .githooks
+cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+cp scripts/pre-push .git/hooks/pre-push   && chmod +x .git/hooks/pre-push
 ```
 
-This activates the Article I pre-commit enforcement hook. It fires on every `git commit` — whether you wrote the code or an agent did. Any staged source file containing an empirical number, equation, or opaque setting without an Amendment 1 primitive citation will block the commit and show the offending lines.
+This installs two enforcement hooks:
 
-This applies to you as much as to agents. The constitution does not distinguish.
+- **`pre-commit`** — runs the constitutional check on every staged commit: Article I primitive citation check, Amendment 12 Corpus Supremacy check, and Stage Gate Order check. Any staged source file containing an empirical constant without a domain primitive citation blocks the commit.
+- **`pre-push`** — re-runs the full constitutional check against the remote ref before any push. This catches `--no-verify` bypasses at commit time — the hook fires again at push and cannot be skipped silently.
+
+Both hooks apply to you as much as to agents. The constitution does not distinguish.
+
+The Claude Code agent-side enforcement runs in addition to the git hooks via `.claude/hooks/`:
+- **`article1_check.py`** — fires on every `Edit` or `Write` tool call targeting source files
+- **`bash_write_guard.py`** — fires on every `Bash` tool call; blocks shell-path writes to `src/signals.py` or `src/algorithm.py` without a Judicial Hearing on record
 
 ### E. A git repository
 
 This framework uses git as the record of decisions. Every Bill enacted, every Amendment ratified, every case law ruling recorded — all of it is a commit. Without git history, you have no audit trail.
+
+---
+
+## Corpus structure — where governance records live
+
+The governance corpus is split into two fragmented directories alongside the legacy monolithic files. Use the fragmented structure for all new entries.
+
+### Amendments
+
+```
+docs/governance/amendments/
+  MANIFEST.md                              ← machine-readable index (always small)
+  amendment_01_domain_primitives.md        ← written by /spec collect
+  amendment_02_stage_gate_order.md
+  amendment_03_toolchain_alignment.md
+  ...
+  amendment_13_time_domain_validation.md
+```
+
+Each amendment is a standalone file. To ratify: change `Status: PROPOSED` to `Status: RATIFIED` in the file and update the `MANIFEST.md` row. The enforcement checks read `MANIFEST.md` first — a fast, always-small index — and load individual files only when content is needed (e.g., primitive names from Amendment 1).
+
+`docs/governance/amendments.md` is now a stub index that links to the individual files. It is kept for backward compatibility — do not add new content there.
+
+### Hearings
+
+```
+docs/governance/hearings/
+  MANIFEST.md                              ← machine-readable index (always small)
+  H-001_hearing-name.md                   ← one file per Judicial Hearing
+  H-002_hearing-name.md
+  ...
+```
+
+Each Judicial Hearing gets its own file. A complete hearing file **must** have all three sections:
+
+```
+## Attorney-A argued:     ← non-empty
+## Attorney-B argued:     ← non-empty
+## Justice ruled:         ← non-empty
+```
+
+A hearing entry missing any section is an **informal ruling** — it does not satisfy Amendment 12 (Corpus Supremacy) and will be flagged by the police agent as `JUDICIAL-INDEPENDENCE-VIOLATION`. The enforcement check queries structural completeness, not keyword presence.
+
+`docs/governance/case_law.md` remains the record of non-hearing governance entries (Bills enacted, stage gate records). New Judicial Hearing entries go in `hearings/`.
 
 ---
 
@@ -109,6 +161,10 @@ START NEW PROJECT
 │     Installs: numpy, matplotlib, bleak, pytest
 │     Check: which renode  /  which pio  /  which ninja
 │
+├─► Install git hooks ─────────────────────────────────────────────────────────────────
+│     cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+│     cp scripts/pre-push   .git/hooks/pre-push   && chmod +x .git/hooks/pre-push
+│
 ├─► /spec collect ──────────────────────────────────────────────────────────────────────┐
 │     │  Interview: device purpose, project target, pass/fail threshold,                │
 │     │  signal inventory, domain primitives, operating envelope                        │
@@ -117,7 +173,9 @@ START NEW PROJECT
 │     ▼                                                                                 │
 │   Human ratifies Amendment 1?                                                         │
 │     No ──► revise and re-ask                                                          │
-│     Yes──► Amendment 1 written to docs/governance/amendments.md                      │
+│     Yes──► Amendment 1 written to:                                                    │
+│              docs/governance/amendments/amendment_01_domain_primitives.md             │
+│              docs/governance/amendments/MANIFEST.md row 1 updated to RATIFIED        │
 │            agent-updater ──► propagates primitives to code-reviewer,                 │
 │                               sw-advisor, hw-advisor, bill-drafter                   │
 │                                                                                       │
@@ -126,12 +184,14 @@ START NEW PROJECT
 │     Fill in: ## Firmware UART Format (event markers, field names, session_end)     │  │
 │     Writes: docs/toolchain_config.md (status: UNLOCKED)                            │  │
 │                                                                                     │  │
-├─► Ratify Amendments 2–4 + Amendment 11 ────────────────────────────────────────────┘  │
+├─► Ratify Amendments 2–4 + Amendments 11–12 ──────────────────────────────────────── ┘  │
+│     For each: edit amendment_NN_slug.md → change Status to RATIFIED                   │
+│               update MANIFEST.md row → change Status to RATIFIED                      │
 │     Amendment 2: Stage Gate Order                                                      │
 │     Amendment 3: Toolchain Alignment                                                   │
 │     Amendment 4: Three-Strike Rule                                                     │
 │     Amendment 11: Scaffold Immutability                                                │
-│     (remove PROPOSED prefix in amendments.md for each)                                 │
+│     Amendment 12: Corpus Supremacy (governs signals.py and algorithm.py commits)       │
 │                                                                                        │
 └─► Ready for /session 0 ◄───────────────────────────────────────────────────────────┘
 ```
@@ -156,12 +216,13 @@ Step 0b — Toolchain check
 │  Blocked toolchain in active slot? ──► STOP: report conflict
 │
 Step 0c — Domain primitives check
+│  Read docs/governance/amendments/amendment_01_domain_primitives.md
 │  Amendment 1 ratified? ──► print primitives
 │  Not ratified? ──► STOP: "Run /spec collect"
 │
 Step 0d — Police check
 │  New project (no commits, no case_law entries)? ──► skip, note "new project"
-│  Has history? ──► audit last 10 commits vs case_law.md
+│  Has history? ──► audit last 10 commits vs case_law.md + hearings/MANIFEST.md
 │     VIOLATION found? ──► STOP: print violation report
 │     WARNINGs? ──► print inline, session continues with acknowledgement required
 │     CLEAN? ──► note "Police check: clean"
@@ -197,7 +258,9 @@ ENTER STAGE N
 │   │    ──► findings → /judicial bill → /judicial hear → implement    │
 │   │                                                                  │
 │   │  Two agents produce conflicting results?                         │
-│   │    ──► /judicial hear ──► ruling ──► case_law.md ──► agent-updater│
+│   │    ──► /judicial hear ──► ruling ──► hearings/H-NNN.md          │
+│   │                              └─► MANIFEST.md updated            │
+│   │                              └─► agent-updater if scope changed  │
 │   │                                                                  │
 │   └─────────────────────────────────────────── back to work loop ───┘
 │
@@ -208,6 +271,7 @@ ENTER STAGE N
 │   ├─ /review code ──► any ARTICLE-I-VIOLATION? ──► Bill required     │
 │   ├─ /review doc  ──► any BLOCKER? ──► fix before gate               │
 │   ├─ police       ──► any VIOLATION? ──► STOP, rule before gate      │
+│   │   (police checks hearings/ MANIFEST for incomplete entries)      │
 │   │                                                                  │
 │   │  All clean? ──► human confirms gate criteria met                 │
 │   │                                                                  │
@@ -225,15 +289,16 @@ ENTER STAGE N
 Change needed (algorithm, firmware, hardware, simulation)
 │
 ├─► /judicial bill "problem description"
-│     bill-drafter reads: amendments.md, case_law.md,
-│                          device_context.md, source files
+│     bill-drafter reads: amendments/MANIFEST.md, case_law.md,
+│                          hearings/MANIFEST.md, device_context.md,
+│                          source files
 │     Evidence gate: physical evidence must exist in record
 │     Amendment gate: must name governing Article/Amendment
 │     Outcome gate: expected improvement in domain primitive units
 │     Scope gate: specific files/functions/values named
 │        │
 │        ├─ Gates pass ──► complete Bill output
-│        └─ Gates fail ──► INCOMPLETE report: "run /regression or /plot evidence first"
+│        └─ Gates fail ──► INCOMPLETE: "run /regression or /plot evidence first"
 │
 ├─► Human reviews Bill
 │
@@ -241,13 +306,31 @@ Change needed (algorithm, firmware, hardware, simulation)
 │     judicial-clerk ──► COURTROOM READY
 │     attorney-A + attorney-B argue in parallel
 │     (optional) /plot evidence ──► generate requested evidence
-│     (optional) Justice asks clarifying questions
 │     Justice rules ──► prevailing position + physical basis
-│     Prevailing attorney writes to case_law.md
+│     Prevailing attorney writes to:
+│       docs/governance/hearings/H-NNN_name.md     ← structured file
+│       docs/governance/hearings/MANIFEST.md       ← index row added
 │     agent-updater ──► if ruling changes agent scope: propose edits
+│     Amendment 12 ──► Corpus check now satisfied for covered files
 │
 └─► Implement on branch named in Bill ──► validate ──► merge
 ```
+
+**Hearing files must contain all three sections before commit:**
+
+```markdown
+## Attorney-A argued:
+[non-empty — position assigned at hearing declaration]
+
+## Attorney-B argued:
+[non-empty — opposing position]
+
+## Justice ruled:
+[non-empty — ruling with physical basis]
+```
+
+A hearing file committed without all three sections is flagged by the pre-commit
+Corpus check and by the police agent as JUDICIAL-INDEPENDENCE-VIOLATION.
 
 ---
 
@@ -359,6 +442,8 @@ Path A+B — parity check:
 
 These are stubbed by `/toolchain scaffold`. The rest of `src/` is generated automatically.
 
+**Article I applies to `src/signals.py` and `src/algorithm.py` exactly as it does to firmware.** Every constant in these files must trace to an Amendment 1 primitive. Amendment 12 (Corpus Supremacy) requires a Judicial Hearing before any commit touching either file — even during Stage 1 development. Amendment 13 requires a time-domain overlay plot (not just a Bode plot) as evidence before any `signals.py` change is authorized.
+
 ---
 
 ## How the agents work
@@ -379,6 +464,42 @@ Agents are Claude subagents launched by slash commands. They do not make decisio
 | `/plot evidence <type>` | Collect evidence during a hearing or validation run |
 
 Agents read `docs/toolchain_config.md` before taking any toolchain-dependent action. A blocked toolchain produces a hard stop with the reason — the agent does not work around it.
+
+---
+
+## The enforcement stack
+
+Crucible runs four overlapping enforcement layers. Understanding how they interact prevents confusion when a commit is blocked:
+
+```
+Layer 1 — Agent-side hooks (Claude Code, real-time)
+  Fires before every Edit/Write/Bash tool call.
+  • article1_check.py  → blocks write to source file with uncited constant
+  • bash_write_guard.py→ blocks shell write to src/signals.py or src/algorithm.py
+                         without a Judicial Hearing on record
+
+Layer 2 — Pre-commit hook (git, per commit)
+  Fires on every git commit.
+  • Article I    → no uncited constant in staged firmware or Python source
+  • Amendment 12 → no Layer 2 commit without a complete Hearing
+  • Amendment 2  → no stage marked CLOSED without a stage-compactor record
+  Block: commit rejected, message shows offending lines and resolution path.
+
+Layer 3 — Pre-push hook (git, per push)
+  Fires on every git push.
+  Same checks as pre-commit but against the full diff vs remote.
+  Catches --no-verify bypasses at commit time.
+  Block: push rejected.
+
+Layer 4 — Police agent (session/gate, on demand)
+  Reads git history, governance records, session output.
+  Detects: informal rulings (Hearing suggested but overridden), incomplete Hearing
+  entries, Article I violations in committed constants, toolchain switches without
+  Bills, three-strike violations, time-domain validation gaps.
+  Does not block mid-session — violations block stage gate exit.
+```
+
+The citation check in Layers 1 and 2 requires the comment to name an **actual Amendment 1 primitive**, not just contain the words "traces to". `# Traces to: sensor mismatch (empirical)` fails. `# Traces to: Floor Acceleration (Amendment 1 primitive 1)` passes. This closes the fake-comment bypass.
 
 ---
 
@@ -418,6 +539,12 @@ The signal-only path (Path A) and the Renode path (Path B) must agree within tol
 
 **6. Implementing `src/signals.py` as noise + a plausible mean.**  
 The signal generator is your physics model. A synthetic signal that looks right but has the wrong frequency content, wrong noise floor, or wrong transient shape will pass simulation but fail in the field. Derive every parameter in `generate()` from a domain primitive with a source citation — the same discipline Article I requires in firmware.
+
+**7. Accepting a Bode plot as full signal model validation.**  
+Frequency-domain and time-domain models can agree on frequency response while diverging on amplitude. Amendment 13 requires a time-domain overlay (synthetic vs real waveform) before any `signals.py` change is committed. A Bode match that hides a time-domain amplitude error produces an incorrect calibration constant that degrades classifiers silently.
+
+**8. Writing a fake `# Traces to:` comment.**  
+The Article I check requires the citation to name an actual Amendment 1 primitive. A comment like `# Traces to: sensor mismatch (empirical)` passes the keyword check but fails the primitive-name check. The only way to satisfy it is to name the actual physical quantity — which forces the derivation to be correct, not just plausible.
 
 ---
 

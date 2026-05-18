@@ -117,16 +117,20 @@ Mandatory sections:
 
 ### 4. Your Amendments
 
-Start with the four mandatory Amendments, then add device-specific rules as you discover them.
+Start with the five mandatory Amendments, then add device-specific rules as you discover them.
 
 **Mandatory starting set:**
 
-| # | Title | What it governs |
-|---|-------|-----------------|
-| 1 | Domain Primitives | Which physical quantities all parameters must trace to |
-| 2 | Stage Gate Order | The sequence and exit criteria for each stage |
-| 3 | Toolchain Alignment | Active toolchain record, blocked toolchain record |
-| 4 | Three-Strike Escalation | When to stop and ask the human |
+| # | Title | What it governs | File |
+|---|-------|-----------------|------|
+| 1 | Domain Primitives | Which physical quantities all parameters must trace to | `amendments/amendment_01_domain_primitives.md` |
+| 2 | Stage Gate Order | The sequence and exit criteria for each stage | `amendments/amendment_02_stage_gate_order.md` |
+| 3 | Toolchain Alignment | Active toolchain record, blocked toolchain record | `amendments/amendment_03_toolchain_alignment.md` |
+| 4 | Three-Strike Escalation | When to stop and ask the human | `amendments/amendment_04_three_strike_escalation.md` |
+| 12 | Corpus Supremacy | Judicial Hearing required before signals.py or algorithm.py commit | `amendments/amendment_12_corpus_supremacy.md` |
+
+To ratify: open each file, change `Status: PROPOSED` to `Status: RATIFIED`, then update the
+corresponding row in `docs/governance/amendments/MANIFEST.md`.
 
 **Common device-specific Amendments (from GaitSense example):**
 
@@ -155,14 +159,17 @@ Write the device purpose statement now and keep it in `docs/device_purpose.md`. 
 Before running `/session 0`:
 
 - [ ] Domain primitives named and written down (not in any file yet — just on paper)
-- [ ] Amendment 1 (Domain Primitives) drafted
-- [ ] Amendment 2 (Stage Gate Order) drafted
+- [ ] `/spec collect` run — writes `docs/device_context.md` and `amendments/amendment_01_domain_primitives.md`
+- [ ] Amendment 1 ratified — Status changed to RATIFIED in the file and in `amendments/MANIFEST.md`
 - [ ] `/toolchain init` run — `docs/toolchain_config.md` created
-- [ ] Amendment 3 (Toolchain Alignment) drafted referencing the config file
-- [ ] Amendment 4 (Three-Strike Escalation) drafted
+- [ ] Amendments 2, 3, 4, 12 ratified — Status changed to RATIFIED in each file and in `amendments/MANIFEST.md`
 - [ ] `docs/device_purpose.md` written (one paragraph)
-- [ ] All four Amendments ratified (you are the sole voting body at this stage — explicit ratification required)
-- [ ] `docs/gaitsense_code/amendments.md` (or your equivalent) committed to git
+- [ ] Git hooks installed:
+  ```bash
+  cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+  cp scripts/pre-push   .git/hooks/pre-push   && chmod +x .git/hooks/pre-push
+  ```
+- [ ] All ratified amendments committed to git
 
 Then run `/session 0`.
 
@@ -172,6 +179,12 @@ Then run `/session 0`.
 
 **Copying GaitSense Amendments verbatim.**  
 GaitSense Amendments reference specific signal names (`gyr_y`, `acc_filt`), specific thresholds (30 dps), and specific terrain profiles. These are wrong for your device. Keep the *structure* of each Amendment; replace the *specifics* with your domain.
+
+**Skipping Amendment 12 (Corpus Supremacy).**
+Amendment 12 is the only enforcement check that cannot be bypassed by a well-crafted comment — it checks the governance record, not the code. Without it, an agent can write a plausible `# Traces to:` comment and commit to `signals.py` without a Hearing. Ratify it before Stage 1 begins.
+
+**Forgetting to install the pre-push hook.**
+The pre-commit hook can be bypassed with `git commit --no-verify`. The pre-push hook fires at push time and cannot be silently skipped. Install both: `scripts/pre-commit` and `scripts/pre-push`.
 
 **Skipping domain primitive naming.**  
 The most common failure. Engineers want to get to the firmware. The primitives feel abstract. Skipping them means your first threshold will be a guess, your second will be a different guess, and at Stage 3 you will have no way to explain why the device behaves the way it does.

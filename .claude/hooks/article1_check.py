@@ -15,7 +15,9 @@ Receives tool call JSON on stdin. Exits 0 (allow) or 2 (block with message).
 
 import json
 import re
+import subprocess
 import sys
+from pathlib import Path
 
 # ─── Patterns that satisfy Article I ──────────────────────────────────────────
 # If any of these appear within 3 lines of a flagged value, it is cited.
@@ -47,6 +49,52 @@ SKIP_PATTERNS = [
 ]
 
 
+def _find_repo_root() -> Path | None:
+    result = subprocess.run(
+        ['git', 'rev-parse', '--show-toplevel'],
+        capture_output=True, text=True
+    )
+    return Path(result.stdout.strip()) if result.returncode == 0 else None
+
+
+def _load_primitives() -> list[str]:
+    """Load Amendment 1 primitive names from the ratified amendment file.
+
+    Prefers fragmented amendments/amendment_01_domain_primitives.md.
+    Falls back to the monolithic amendments.md for backward compatibility.
+    """
+    root = _find_repo_root()
+    if not root:
+        return []
+    # Fragmented path first — loads only one small file.
+    fragment = root / 'docs' / 'governance' / 'amendments' / 'amendment_01_domain_primitives.md'
+    if fragment.exists():
+        text = fragment.read_text()
+        if 'NOT YET RATIFIED' in text or 'PROPOSED' in text:
+            return []
+        names = re.findall(r'^\s*\d+\.\s+([A-Z][^\(]+)', text, re.MULTILINE)
+        return [n.strip() for n in names]
+    # Monolithic fallback.
+    amendments = root / 'docs' / 'governance' / 'amendments.md'
+    if not amendments.exists():
+        return []
+    text = amendments.read_text()
+    block_match = re.search(
+        r'### Amendment 1[^\n]*\n(.*?)(?=\n### Amendment|\Z)', text, re.DOTALL
+    )
+    if not block_match:
+        return []
+    block = block_match.group(1)
+    if 'PROPOSED' in block:
+        return []
+    names = re.findall(r'^\s*\d+\.\s+([A-Z][^\(]+)', block, re.MULTILINE)
+    return [n.strip() for n in names]
+
+
+# Loaded once at module import — re-run of hook gets fresh module each invocation.
+_PRIMITIVES: list[str] = _load_primitives()
+
+
 def is_source_file(path: str) -> bool:
     path = path.replace('\\', '/')
     for skip in SKIP_PATTERNS:
@@ -56,10 +104,21 @@ def is_source_file(path: str) -> bool:
 
 
 def has_citation(lines: list[str], idx: int) -> bool:
-    """True if lines within ±3 of idx contain a primitive citation."""
+    """True if lines within ±3 of idx contain a primitive citation.
+
+    When Amendment 1 is ratified (_PRIMITIVES non-empty), the citation must name
+    at least one actual primitive — a fake '# Traces to: sensor mismatch (empirical)'
+    satisfies the keyword check but not the primitive-name check, so it fails.
+    When Amendment 1 is not yet ratified, keyword-only check applies (graceful).
+    """
     window = lines[max(0, idx - 3): idx + 4]
     combined = '\n'.join(window)
-    return any(re.search(p, combined, re.IGNORECASE) for p in CITATION_PATTERNS)
+    has_keyword = any(re.search(p, combined, re.IGNORECASE) for p in CITATION_PATTERNS)
+    if not has_keyword:
+        return False
+    if not _PRIMITIVES:
+        return True
+    return any(p.lower() in combined.lower() for p in _PRIMITIVES)
 
 
 def find_violations(content: str) -> list[tuple[int, str, str]]:

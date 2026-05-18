@@ -31,18 +31,31 @@ unauthorized change is a /hear and a retroactive audit.
 ## Where everything lives
 
 ```
-CONSTITUTION.md                     ← start here — Articles, Branches, Standing Orders
-docs/governance/amendments.md       ← ratified rules (Amendment 1 = domain primitives)
-docs/governance/case_law.md         ← all Judicial Hearing rulings
-docs/device_context.md              ← device purpose, BOM, signal inventory, test results
-docs/toolchain_config.md            ← active board, FQBN, pins, libs, blocked toolchains,
-                                      firmware UART format (event definitions for scaffold)
-crucible/                           ← infrastructure Python (no domain knowledge)
-src/                                ← generated project Python (events, analysis, plot)
-                                      run /toolchain scaffold to create this directory
-.claude/agents/                     ← 17 agent definitions
-.claude/commands/                   ← 10 slash command definitions
-ONBOARDING.md                       ← workflow maps and flowcharts
+CONSTITUTION.md                              ← start here — Articles, Branches, Standing Orders
+docs/governance/amendments/                  ← individual amendment files (canonical)
+  MANIFEST.md                                  machine-readable index (always small, always load this)
+  amendment_01_domain_primitives.md            LOAD THIS for primitives — written by /spec collect
+  amendment_NN_slug.md                         one file per amendment; load only what you need
+docs/governance/amendments.md               ← stub index only — links to amendments/; do not read for content
+docs/governance/hearings/                   ← individual Judicial Hearing files (canonical)
+  MANIFEST.md                                  machine-readable index; checked by corpus enforcement
+  H-NNN_hearing-name.md                        one file per Judicial Hearing
+docs/governance/case_law.md                 ← Bills enacted, stage gate records, non-hearing entries
+docs/device_context.md                      ← device purpose, BOM, signal inventory, test results
+docs/toolchain_config.md                    ← active board, FQBN, pins, libs, blocked toolchains,
+                                               firmware UART format (event definitions for scaffold)
+crucible/                                   ← infrastructure Python (no domain knowledge)
+  checks/                                      pre-commit enforcement: article_i.py, corpus.py, runner.py
+  corpus/                                      knowledge graph: graph.py, query.py
+src/                                        ← generated project Python (events, analysis, plot)
+                                               run /toolchain scaffold to create this directory
+.claude/agents/                             ← 17 agent definitions
+.claude/commands/                           ← 10 slash command definitions
+.claude/hooks/article1_check.py            ← PreToolUse hook — Edit/Write to source files
+.claude/hooks/bash_write_guard.py          ← PreToolUse hook — Bash writes to Layer 2 files
+scripts/pre-commit                          ← installable pre-commit hook template
+scripts/pre-push                            ← installable pre-push hook template
+ONBOARDING.md                               ← workflow maps and flowcharts
 ```
 
 The `crucible/` package is infrastructure only — it has no knowledge of gait, temperature,
@@ -58,8 +71,12 @@ The `signals.py` + `algorithm.py` pair enables the signal-only simulation path �
 firmware required, runs in seconds. The Renode path validates that the firmware implementation
 matches the Python model. Both paths must agree at Stage 1 gate.
 
-Read `docs/governance/amendments.md` first in every session — Amendment 1 names
-the domain primitives that govern every Article I decision in this project.
+**Read `docs/governance/amendments/amendment_01_domain_primitives.md` first in every session.**
+This is the only file you need for domain primitives — it is small and self-contained.
+Do not load the full monolithic `amendments.md` stub.
+
+Read `docs/governance/amendments/MANIFEST.md` to check amendment statuses without loading
+every amendment file. One row per amendment, always current.
 
 Read `docs/toolchain_config.md` before any toolchain-dependent action — it records
 the active board, flash method, and any blocked tools. A blocked toolchain is a
@@ -170,6 +187,7 @@ Use `/judicial bill <description>` to produce the Bill. Then `/judicial hear` to
 
 ## What requires a Hearing (Judicial Process)
 
+- Any change to `src/signals.py` or `src/algorithm.py` (Amendment 12 — Corpus Supremacy)
 - Two amendments mandate incompatible actions
 - An agent is uncertain which amendment governs
 - A Bill is disputed
@@ -177,6 +195,17 @@ Use `/judicial bill <description>` to produce the Bill. Then `/judicial hear` to
 - Three-strike escalation: a fix fails three times (Amendment 4)
 
 Use `/judicial hear "<hearing name>" <position A> vs <position B>`.
+
+**Every Hearing must produce a structured file** in `docs/governance/hearings/H-NNN_name.md`
+with all three sections present before the hearing is considered complete:
+```
+## Attorney-A argued:    ← non-empty
+## Attorney-B argued:    ← non-empty
+## Justice ruled:        ← non-empty
+```
+Then add a row to `docs/governance/hearings/MANIFEST.md` with Has-A/Has-B/Has-J = TRUE.
+A Hearing entry that is missing any section is an informal ruling and does not satisfy
+Amendment 12. The pre-commit Corpus check enforces this.
 
 ## What requires human approval before execution (Article II)
 
@@ -193,24 +222,27 @@ Use `/judicial hear "<hearing name>" <position A> vs <position B>`.
 Run `/session status`. It reads the constitutional record and prints:
 - Current stage status (which stages are CLOSED / OPEN / NOT STARTED)
 - Active toolchain
-- Amendment count and most recent
-- Case law entry count
+- Amendment count and most recent (read from `amendments/MANIFEST.md`)
+- Hearing count (read from `hearings/MANIFEST.md`)
 - Any open violations from police
 
-If you are resuming mid-stage, read `docs/governance/case_law.md` to see what
-was already decided. Do not re-debate closed cases.
+If you are resuming mid-stage, read:
+- `docs/governance/hearings/MANIFEST.md` — what Hearings are on record and whether they are complete
+- `docs/governance/case_law.md` — Bills enacted and stage records
+Do not re-debate closed cases. Do not treat incomplete Hearing entries as authoritative rulings.
 
 ## How to start a new project (forking this repo)
 
 1. `/spec collect` — interview about device purpose, signal inventory, domain primitives
 2. Run `agent-updater` — propagate Amendment 1 primitives to all agents
 3. `/toolchain init` — register your board, pins, libraries
-4. Ratify Amendments 2–4 in `docs/governance/amendments.md` (remove PROPOSED prefix)
-5. Run `agent-updater` again — propagate stage gate/toolchain/three-strike rules
-6. `/session 0` — HIL toolchain lock
-7. Fill in `docs/toolchain_config.md` `## Firmware UART Format` (event definitions)
-8. `/toolchain scaffold` — generate `src/events.py`, `src/analysis.py`, `src/plot.py`
-9. `/session 1` — simulation (scaffold check runs automatically here)
+4. Install git hooks: `cp scripts/pre-commit .git/hooks/ && cp scripts/pre-push .git/hooks/ && chmod +x .git/hooks/pre-commit .git/hooks/pre-push`
+5. Ratify Amendments 2–4 + 12 in `docs/governance/amendments/`: change Status to RATIFIED in the individual file AND in `amendments/MANIFEST.md`
+6. Run `agent-updater` again — propagate stage gate/toolchain/three-strike/corpus rules
+7. `/session 0` — HIL toolchain lock
+8. Fill in `docs/toolchain_config.md` `## Firmware UART Format` (event definitions)
+9. `/toolchain scaffold` — generate `src/events.py`, `src/analysis.py`, `src/plot.py`
+10. `/session 1` — simulation (scaffold check runs automatically here)
 
 Do not skip `/spec collect`. Domain primitives are the foundation Article I enforces
 against. Without them, code-reviewer, sw-advisor, hw-advisor, and bill-drafter
@@ -220,10 +252,24 @@ have no basis for their findings.
 
 ## The one thing you must not do
 
-Do not set a threshold, cutoff, or parameter in firmware source without citing a
-domain primitive in an inline comment. Not as a style rule — as a constitutional
-requirement. A constant without a primitive citation is an Article I violation.
+Do not set a threshold, cutoff, or parameter in firmware source or in
+`src/signals.py` / `src/algorithm.py` without citing a domain primitive in an
+inline comment. Not as a style rule — as a constitutional requirement.
+
+**The citation must name an actual Amendment 1 primitive.** A comment like
+`# Traces to: sensor mismatch (empirical)` passes the keyword check but fails
+the primitive-name check in `article1_check.py` and `article_i.py`. The only
+comment that passes is one that names a primitive from Amendment 1 — e.g.
+`# Traces to: Floor Acceleration (Amendment 1 primitive 1)`.
+
+A constant without a primitive citation is an Article I violation.
 The code-reviewer will flag it. The police will record it.
 
 If you do not know which primitive a constant traces to, that is the signal to
 stop and ask the human — not to guess and proceed.
+
+**Also: do not write to `src/signals.py` or `src/algorithm.py` without a
+Judicial Hearing on record** (Amendment 12 — Corpus Supremacy). The
+`bash_write_guard.py` hook will block Bash-path writes. The pre-commit hook will
+block git commits. The only way through is a completed Hearing — which is the
+correct path.

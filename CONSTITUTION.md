@@ -57,12 +57,17 @@ The GaitSense reference implementation has 17 ratified Amendments. They are docu
 - An Amendment defining its stage gate order — pre-drafted as Amendment 2
 - An Amendment defining its toolchain alignment record — pre-drafted as Amendment 3
 - An Amendment defining its three-strike escalation rule — pre-drafted as Amendment 4
+- An Amendment governing the physics model and algorithm corpus — pre-drafted as Amendment 12
 
-These four are the minimum viable governance layer. Everything else grows from them.
+These five are the minimum viable governance layer. Everything else grows from them.
+Amendment 12 (Corpus Supremacy) is critical — it is the only check that cannot be
+bypassed by a well-crafted comment, because it verifies the governance record, not the code.
 
-Amendments 2–4 (and optional Amendments 5–10) are pre-drafted in `docs/governance/amendments.md`.
-Read them, confirm they apply to your project, and ratify by removing the PROPOSED prefix.
-Amendment 1 is written by `/spec collect` after domain primitive ratification.
+Amendments are pre-drafted as individual files in `docs/governance/amendments/`.
+Each file covers one amendment. Read the relevant file, confirm it applies to your project,
+and ratify by changing the Status line from `PROPOSED` to `RATIFIED` in the file and in
+`docs/governance/amendments/MANIFEST.md`. Amendment 1 is written by `/spec collect` into
+`docs/governance/amendments/amendment_01_domain_primitives.md`.
 
 ---
 
@@ -167,7 +172,7 @@ Where Amendments and precedents are silent or ambiguous, the Justice asks: *whic
 4. **Argument — Position B.** Same four elements.
 5. **Deliberation.** Justice may ask one clarifying question per attorney.
 6. **Ruling.** Justice announces prevailing position, physical/empirical basis, patient/user outcome protected, any conditions.
-7. **Recording.** Prevailing attorney records the ruling in `docs/governance/case_law.md` before any implementation begins.
+7. **Recording.** Prevailing attorney creates a hearing file at `docs/governance/hearings/H-NNN_name.md` with all three sections present (Attorney-A argued, Attorney-B argued, Justice ruled), then adds a row to `docs/governance/hearings/MANIFEST.md`. This must happen before any implementation begins. A hearing entry missing any of the three sections is an informal ruling and does not satisfy Amendment 12 (Corpus Supremacy).
 
 ### Binding effect
 
