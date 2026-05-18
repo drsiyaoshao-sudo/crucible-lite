@@ -11,6 +11,7 @@ Exits 0 if no VIOLATION found. Exits 1 if any VIOLATION found.
 """
 
 import argparse
+import subprocess
 import sys
 from typing import Optional
 from pathlib import Path
@@ -25,6 +26,19 @@ def _header(text: str) -> str:
     return f'\n{bar}\n{text}\n{bar}'
 
 
+def _detect_repo_root() -> Path:
+    # When installed via pip, __file__ lives in site-packages, so parents[3] no
+    # longer points at the project. Ask git for the working-tree root instead;
+    # fall back to parents[3] only for the in-tree (monolithic) layout.
+    result = subprocess.run(
+        ['git', 'rev-parse', '--show-toplevel'],
+        capture_output=True, text=True, cwd=Path.cwd(),
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        return Path(result.stdout.strip())
+    return Path(__file__).resolve().parents[3]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('--base-ref', default=None,
@@ -33,7 +47,7 @@ def main() -> int:
                         help='Pre-commit mode: staged files only, warnings allowed')
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = _detect_repo_root()
     base_ref = args.base_ref
     pre_commit = args.pre_commit
 
